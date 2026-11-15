@@ -316,6 +316,8 @@
   },
   "primaryTokenAttribute": "wounds",
   "secondaryTokenAttribute": "strain",
-  "url": "https://github.com/StarWarsFoundryVTT/StarWarsFFG",
-  "license": "LICENSE.txt"
+  "license": "LICENSE.txt",
+  "url": "https://github.com/tomjdr4-hub/SWFFGperso",
+  "manifest": "https://github.com/tomjdr4-hub/SWFFGperso/releases/latest/download/system.json",
+  "download": "https://github.com/tomjdr4-hub/SWFFGperso/releases/download/v2.0.4/system.zip"
 }
