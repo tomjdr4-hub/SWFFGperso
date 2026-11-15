@@ -1,0 +1,43 @@
+export default class TemplateHelpers {
+  static async preload() {
+    const templatePaths = [
+      "systems/starwarsffg-v14/templates/parts/shared/ffg-modifiers.html",
+      "systems/starwarsffg-v14/templates/parts/shared/ffg-sources.html",
+      "systems/starwarsffg-v14/templates/parts/shared/ffg-tags.html",
+      "systems/starwarsffg-v14/templates/parts/shared/ffg-effects.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-skills.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-weapon-armor-gear.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-adjusted-value.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-vehicle-weapon-attachments.html",
+      "systems/starwarsffg-v14/templates/parts/ffg-qualities-attachments-mods.html",
+      "systems/starwarsffg-v14/templates/parts/ffg-mods.html",
+      "systems/starwarsffg-v14/templates/items/dialogs/ffg-mod.html",
+      "systems/starwarsffg-v14/templates/items/dialogs/ffg-modification.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-vehicle-cargo.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-vehicle-crew.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-homestead-upgrades.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-homestead-storage.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-talents.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-abilities.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-forcepowers.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-criticalinjury.html",
+      "systems/starwarsffg-v14/templates/parts/shared/ffg-block.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-signatureability.html",
+      "systems/starwarsffg-v14/templates/chat/roll-forcepower-card.html",
+      "systems/starwarsffg-v14/templates/chat/roll-weapon-card.html",
+      "systems/starwarsffg-v14/templates/chat/roll-vehicle-card.html",
+      "systems/starwarsffg-v14/templates/parts/shared/ffg-tabs.html",
+      "systems/starwarsffg-v14/templates/parts/actor/ffg-healingitem.html",
+      "systems/starwarsffg-v14/templates/combat/ffg-combat-tracker-header.html",
+      "systems/starwarsffg-v14/templates/combat/ffg-combat-tracker-body.html",
+      "systems/starwarsffg-v14/templates/combat/ffg-combat-tracker-footer.html",
+      "systems/starwarsffg-v14/templates/chat/parts/item/ffg-header.html",
+      "systems/starwarsffg-v14/templates/chat/parts/item/ffg-footer.html",
+      "systems/starwarsffg-v14/templates/wizards/char_creator/actor_preview.html",
+      "systems/starwarsffg-v14/templates/wizards/char_creator/preview/skills.html",
+      "systems/starwarsffg-v14/templates/wizards/char_creator/preview/specialization.html",
+      "systems/starwarsffg-v14/templates/wizards/char_creator/preview/forcepower.html",
+    ];
+    return foundry.applications.handlebars.loadTemplates(templatePaths);
+  }
+}

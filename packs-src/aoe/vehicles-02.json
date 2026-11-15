@@ -1,0 +1,511 @@
+[
+ {
+  "name": "Chasseur Caméléon",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 3,
+  "speed": 4,
+  "handling": 0,
+  "def": [
+   0,
+   null,
+   null,
+   0
+  ],
+  "armour": 3,
+  "hull": 10,
+  "strain": 8,
+  "model": "chasseur/Caméléon",
+  "maker": "Kuat Systems Engineering",
+  "hyper": null,
+  "hyperBackup": null,
+  "navi": "aucun",
+  "sensor": "Close",
+  "crew": "1 pilote",
+  "enc": 12,
+  "pass": 0,
+  "consumables": "1 jour",
+  "price": 38000,
+  "rarity": 4,
+  "hp": 3,
+  "weapons": [
+   {
+    "name": "Canons laser légers",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 5,
+    "crit": 3,
+    "q": [
+     "Jumelé 1"
+    ]
+   },
+   {
+    "name": "Lance-missiles à concussion",
+    "range": "Short",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 6,
+    "crit": 3,
+    "q": [
+     "Brèche 4",
+     "Cadence lente 1",
+     "Jumelé 1",
+     "Munitions limitées 6",
+     "Projectile guidé 3",
+     "Souffle 4"
+    ]
+   }
+  ],
+  "desc": "Le Caméléon KSE est un chasseur dont la production commença dans les décennies ayant précédé la Guerre des Clones sous l'égide de Kuat Systems Engineering, une filiale défunte des Chantiers Navals de Kuat. Ce modèle fut conçu pour assurer la supériorité spatiale, mais aussi pour exceller dans les combats atmosphériques ou suborbitaux grâce à son fuselage relativement aérodynamique et à la bonne portance dont il jouit. Il est propulsé par deux moteurs à postcombustion ionique KSE 807b/9 ainsi que par un petit moteur à répulsion, ce qui lui confère une vitesse respectable, mais guère d'agilité. Ces appareils ne possèdent ni hyperdrive ni boucliers, mais ils disposent en revanche d'une coque lourdement renforcée qui leur assure une immense durabilité. En dépit de leurs performances médiocres, de leur court rayon d'action et de leur manque de polyvalence, cela fait maintenant plusieurs décennies que les Caméléons sont en service. Leur longévité s'explique en fait par deux facteurs : ils sont bon marché et faciles à modifier.</p><p>D'après un dicton, il n'existe pas de modèle d'usine de Caméléon. L'architecture simple de ces appareils, l'aspect modulaire de leurs composants ainsi que les nombreuses options de raccordement électrique et informatique qu'ils proposent en font des candidats idéaux pour les modifications.</p><h3>Modifications</h3><p><strong>Kit de stabilisation de Curich Engineering :</strong> produit par Curich Engineering, une filiale de Santhe/Sienar Technologies, ce kit comprenant un aileron et un kit de stabilisation fut spécifiquement conçu pour compenser le manque de maniabilité du chasseur Caméléon. Cette modification est si courante que la plupart de ceux qui connaissent ce petit chasseur s'imaginent qu'elle fait partie de l'architecture de base de l'appareil. Les effets de ce kit sont déjà inclus dans le profil du Caméléon ci-dessus. Si les PJ se débrouillent pour dénicher un exemplaire qui ne dispose pas de cette amélioration, la maniabilité du vaisseau devient -1 et le nombre d'emplacements disponibles passe à 4.</p><h3>Traîneau hyperdrive Syliure 25</h3><p>Le traîneau hyperdrive Syliure 25 de TransGalMeg Industries est l'un des nombreux traîneaux et anneaux qu'on emploie à travers la galaxie pour conférer la capacité de voyager dans l'hyperespace aux petits vaisseaux, comme les chasseurs ou les patrouilleurs. Ce modèle associe un hyperdrive de classe 2 à un droïde astromech R1 ou R2 et permet de faire cinq sauts. Quand un vaisseau (ou un appareil de gabarit 3 ou moins) s'arrime au traîneau, sa maniabilité est réduite de 2 et sa vitesse de 1, mais il est possible de s'en débarrasser dans l'espace à tout instant. Le Syliure 25 coûte 10 000 crédits."
+ },
+ {
+  "name": "Patrouilleur de système Firespray",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 4,
+  "speed": 4,
+  "handling": 0,
+  "def": [
+   1,
+   null,
+   null,
+   1
+  ],
+  "armour": 4,
+  "hull": 15,
+  "strain": 12,
+  "model": "patrouilleur/Firespray",
+  "maker": "Kuat Systems Engineering",
+  "hyper": 3,
+  "hyperBackup": 15,
+  "navi": "oui",
+  "sensor": "Short",
+  "crew": "1 pilote, 2 gardes",
+  "enc": 40,
+  "pass": 6,
+  "consumables": "1 mois",
+  "price": 80000,
+  "rarity": 4,
+  "hp": 4,
+  "weapons": [
+   {
+    "name": "Autoblasters",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 3,
+    "crit": 5,
+    "q": [
+     "Automatique"
+    ]
+   },
+   {
+    "name": "Rayon tracteur léger",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 0,
+    "crit": 0,
+    "q": [
+     "Tracteur 2"
+    ]
+   }
+  ],
+  "desc": "Avec son allure de tête d'éléphant, son orientation de vol inhabituelle et le cockpit rotatif unique en son genre qui lui permet d'atterrir à l'horizontale, le Firespray fut salué comme une révolution dans la conception et le dessin des vaisseaux. KSE n'en produisit que six exemplaires, qui furent livrés à une prison de la République sur Oovo IV peu avant la bataille de Naboo. Jango Fett vola l'un des appareils et détruisit les autres afin d'empêcher toute poursuite. La perte de ces prototypes extrêmement coûteux infligea un coup dévastateur à Kuat Systems Engineering, et la firme choisit de mettre le projet Firespray au placard pour un moment.</p><p>Principalement conçus pour servir de patrouilleurs de système et pour les courses-poursuites, les six Firespray d'origine disposaient, pour alimenter leurs deux moteurs ioniques CNK F-31, de quatre générateurs à haute puissance Kuat X-F-16 qui prenaient pratiquement tout l'espace à l'intérieur de l'habitacle, mais leur conféraient une vitesse plus que suffisante pour s'occuper des cargos, transports et navettes égarées. Ce vaisseau ayant été développé dans l'idée d'optimiser l'aspect pratique plutôt que le confort, l'intérieur de l'appareil est incroyablement étroit, mais il abrite néanmoins une petite soute, située dans la partie inférieure de la proue, comprenant un poste de garde et six cellules exiguës.</p><p>KSE a récemment mis ce modèle en vente pour répondre à la demande croissante de patrouilleurs et de vaisseaux pour les forces de l'ordre sur les mondes contrôlés par l'Empire. Le nouveau modèle reprend les plans des six prototypes, mais il bénéficie des progrès dans l'aérospatiale réalisés ces trente dernières années. L'accroissement de la demande et une campagne de publicité agressive ont rendu ces vaisseaux très populaires auprès des forces de police, des chasseurs de primes, et même de certains contrebandiers ou pirates.</p><p>Passagers : 6 (prisonniers)."
+ },
+ {
+  "name": "Vaisseau d'exploration Jumpmaster JM-5000",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 4,
+  "speed": 4,
+  "handling": 1,
+  "def": [
+   1,
+   null,
+   null,
+   0
+  ],
+  "armour": 2,
+  "hull": 14,
+  "strain": 8,
+  "model": "patrouilleur/Jumpmaster",
+  "maker": "Corporation Technique Corellienne",
+  "hyper": 3,
+  "hyperBackup": 15,
+  "navi": "oui",
+  "sensor": "Extreme",
+  "crew": "1 pilote",
+  "enc": 30,
+  "pass": 1,
+  "consumables": "2 mois",
+  "price": 55000,
+  "rarity": 5,
+  "hp": 2,
+  "weapons": [
+   {
+    "name": "Canon laser léger",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 5,
+    "crit": 3,
+    "q": []
+   }
+  ],
+  "desc": "Le vaisseau d'exploration Jumpmaster de la Corporation Technique Corellienne est un petit engin monoplace conçu pour les missions de reconnaissance longue distance. Relativement rapide et agile, le JM-5000 dispose d'une coque plutôt plate en forme de croissant abritant les sensibles et puissants senseurs de l'appareil. Il arbore enfin un habitacle cylindrique, situé du côté bâbord, dans lequel se trouvent le cockpit, les quartiers spartiates du pilote ainsi que les moteurs et les générateurs du vaisseau. Le Jumpaster ne bénéficie pas d'un épais blindage et ne dispose que d'un simple canon laser pour se défendre, comptant avant tout sur sa rapidité et ses senseurs pour éviter les ennuis.</p><p>En raison de ses puissants moyens de détection, le JM-5000 est souvent employé par les forces militaires planétaires comme éclaireur ou pour donner l'alerte dans un système solaire. Personne n'utilise cependant un plus grand nombre de ces engins que le Corps de l'Astrogation Civile, un groupe d'explorateurs, d'astrogateurs et de cartographes volontaires qui se chargent de mettre à jour les cartes hyperspatiales."
+ },
+ {
+  "name": "Navette long-courrier Lambda T-4A",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 4,
+  "speed": 3,
+  "handling": 0,
+  "def": [
+   2,
+   null,
+   null,
+   1
+  ],
+  "armour": 4,
+  "hull": 25,
+  "strain": 15,
+  "model": "navette/Lambda",
+  "maker": "Systèmes de Flotte Sienar ou Cygnus Astronautique",
+  "hyper": 1,
+  "hyperBackup": 10,
+  "navi": "oui",
+  "sensor": "Short",
+  "crew": "1 pilote, 1 copilote, 1 navigateur, 1 artilleur, 1 officier des communications, 1 ingénieur",
+  "enc": 200,
+  "pass": 20,
+  "consumables": "2 mois",
+  "price": 140000,
+  "restricted": true,
+  "rarity": 6,
+  "hp": 2,
+  "weapons": [
+   {
+    "name": "Deux canons blaster légers jumelés",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 4,
+    "crit": 4,
+    "q": [
+     "Jumelé 1"
+    ]
+   },
+   {
+    "name": "Deux canons laser légers jumelés",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 5,
+    "crit": 3,
+    "q": [
+     "Jumelé 1"
+    ]
+   },
+   {
+    "name": "Deux canons blasters légers jumelés rétractables",
+    "range": "Close",
+    "arcs": [
+     "aft"
+    ],
+    "dmg": 4,
+    "crit": 4,
+    "q": [
+     "Jumelé 1"
+    ]
+   }
+  ],
+  "desc": "Ces navettes utilitaires construites par Sienar sont couramment employées par la Marine et souvent aperçues aux alentours des installations de l'Empire. Ces appareils lents et robustes sont conçus pour acheminer à la fois des passagers et du fret, mais ils peuvent aussi être configurés pour emporter des troupes et des cargaisons lourdes, ou faire office de transport de luxe pour dignitaires. Les modèles de classe Lambda disposent d'une coque carrée lourdement blindée, pourvue d'un aileron stabilisateur sur leur partie dorsale et recourent, pour se stabiliser, à deux ailes segmentées dépliables, situées sur les flancs du vaisseau.</p><p>Ces navettes sont propulsées par deux moteurs ioniques SFS-204 et emploient un hyperdrive de type SFS S/ig-73 pour les voyages long-courriers. Elles sont dotées d'un armement redoutable pour des vaisseaux de cette classe, disposant notamment de plusieurs canons laser et de canons blaster, installés à divers points de la coque pour couvrir un grand arc de tir. Ces navettes n'incluent pas de capsules de survie, mais leur passerelle avant peut se détacher et fonctionner de façon autonome en cas d'urgence. Étant donné leur grande utilité et leur versatilité surprenante pour des appareils de type militaire, elles sont souvent convoitées par les voleurs de vaisseaux ainsi que par les pirates, et il est ainsi parfois possible de se les procurer sur le marché noir.</p><p>Charge utile : 200 (sans passagers)."
+ },
+ {
+  "name": "Chasseur TIE/LN",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 3,
+  "speed": 5,
+  "handling": 3,
+  "def": [
+   0,
+   null,
+   null,
+   0
+  ],
+  "armour": 2,
+  "hull": 6,
+  "strain": 8,
+  "model": "chasseur/série TIE",
+  "maker": "Systèmes de Flotte Sienar",
+  "hyper": null,
+  "hyperBackup": null,
+  "navi": "aucun",
+  "sensor": "Close",
+  "crew": "1 pilote",
+  "enc": 4,
+  "pass": 0,
+  "consumables": "2 jours",
+  "price": 50000,
+  "restricted": true,
+  "rarity": 4,
+  "hp": 0,
+  "weapons": [
+   {
+    "name": "Canons laser moyens",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 6,
+    "crit": 3,
+    "q": [
+     "Jumelé 1"
+    ]
+   }
+  ],
+  "desc": "Le minuscule et fragile TIE/ln est en service depuis des décennies et fait encore aujourd'hui office de chasseur principal de la Marine impériale. Ce vaisseau emblématique est léger, rapide, mais surtout incroyablement manœuvrable, et il ne s'embarrasse ni de fioritures ni de superflu. Il se compose d'un module sphérique blindé pourvu d'une baie vitrée en transparacier, protégé par deux énormes ailes hexagonales recouvertes de panneaux solaires. Il ne dispose en revanche ni de boucliers, ni de train d'atterrissage, ni d'hyperdrive. L'appareil est peu informatisé et n'intègre pas de système de survie, obligeant son pilote à revêtir une combinaison spatiale. Tout ce qui n'était pas absolument nécessaire au chasseur a été éliminé au stade de la conception, donnant naissance à un engin d'une rapidité hors du commun et d'une agilité ahurissante qui ne pardonne cependant pas la moindre erreur au pilote.</p><p>En plus d'être léger, ce vaisseau est aussi incroyablement simple. Son alimentation est assurée par une version miniature du réacteur à ionisation solaire I-a2b produit par les Systèmes de Flotte Sienar, qui capte l'énergie solaire au moyen des panneaux disposés sur les ailes du chasseur. Ce générateur alimente deux moteurs ioniques SFS P-s4 à fort rendement ainsi qu'un canon laser jumelé situé sous le cockpit. Les chasseurs TIE ne peuvent opérer que sur de courtes distances. Quand ils ne sont pas rattachés à une station orbitale ou stationnés sur une base navale, ils doivent voyager à bord d'un vaisseau amiral comme un destroyer stellaire ou une frégate d'escorte pour arriver sur zone."
+ },
+ {
+  "name": "Chasseur d'attaque Y-wing BTL-A4 & BTL-S3",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 3,
+  "speed": 4,
+  "handling": 0,
+  "def": [
+   1,
+   null,
+   null,
+   1
+  ],
+  "armour": 3,
+  "hull": 12,
+  "strain": 10,
+  "model": "chasseur/Y-wing BTL",
+  "maker": "Koensayr",
+  "hyper": 1,
+  "hyperBackup": null,
+  "navi": "aucun/emplacement pour droïde astromech",
+  "sensor": "Close",
+  "crew": "1 pilote (plus 1 artilleur dans le cas du BTL-S3)",
+  "enc": 10,
+  "pass": 0,
+  "consumables": "1 semaine",
+  "price": 80000,
+  "rarity": 4,
+  "hp": 1,
+  "weapons": [
+   {
+    "name": "Canons ioniques légers jumelés",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 5,
+    "crit": 4,
+    "q": [
+     "Ionique",
+     "Jumelé 1"
+    ],
+    "note": "Monté sur tourelle : arc de tir avant ou tous et contrôlés par l'artilleur, dans le cas d'un BTL-S3."
+   },
+   {
+    "name": "Canons laser moyens jumelés",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 6,
+    "crit": 3,
+    "q": [
+     "Jumelé 1"
+    ]
+   },
+   {
+    "name": "Lance-torpilles à protons",
+    "range": "Short",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 8,
+    "crit": 2,
+    "q": [
+     "Brèche 6",
+     "Jumelé 1",
+     "Munitions limitées 8",
+     "Projectile guidé 2",
+     "Souffle 6",
+     "Cadence lente 1"
+    ]
+   }
+  ],
+  "desc": "L'Y-wing de Koensayr est un bombardier et chasseur d'attaque lourd. Les « fourchettes », comme les appellent affectueusement leurs pilotes, se composent d'une section centrale blindée, flanquée à l'arrière de deux nacelles encastrées dans des pylônes renforcés. Le module central abrite un cockpit extrêmement résistant contenant des systèmes de survie et d'aide au pilotage. Cette partie recèle aussi l'armement du vaisseau et un emplacement, situé juste derrière le cockpit, permettant d'accueillir un droïde astromech. Le générateur Novaldex, le générateur de boucliers, l'hyperdrive et divers autres systèmes occupent la section arrière de la section centrale et sont flanqués, de part et d'autre, des nacelles des propulseurs qui contiennent chacune un moteur ionique R200 de Koensayr.</p><p>Afin de remplir leur rôle de bombardiers, les Y-wing disposent d'un blindage conséquent et de puissants boucliers qui les protègent pendant qu'ils sont en approche de leurs cibles. Bien qu'ils soient réputés pour leur fiabilité, les Y-wing se comportent parfois de façon un peu excentrique et nécessitent une attention constante. Ces particularités ont poussé bien des techniciens et pilotes exaspérés à ôter définitivement les fines plaques de blindage recouvrant les systèmes internes du chasseur, celles-ci remplissant une fonction essentiellement cosmétique.</p><p>Le modèle BTL-A4 est monoplace, tandis que la variante BTL-S3 dispose d'un deuxième siège permettant d'accueillir un opérateur des senseurs ou un artilleur. Dans le cas des BTL-S3, c'est le copilote qui contrôle les canons ioniques montés sur tourelle. Sur l'autre modèle, ils sont en revanche couplés avec les canons laser de proue et actionnés par le pilote. Les différences étant minimes au bout du compte, ce profil peut être utilisé pour n'importe laquelle des deux variantes."
+ },
+ {
+  "name": "Chasseur de Têtes Z-95-AF4",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 3,
+  "speed": 4,
+  "handling": 1,
+  "def": [
+   1,
+   null,
+   null,
+   0
+  ],
+  "armour": 3,
+  "hull": 9,
+  "strain": 8,
+  "model": "chasseur/Chasseur de Têtes",
+  "maker": "Incom/Subpro",
+  "hyper": null,
+  "hyperBackup": null,
+  "navi": "aucun",
+  "sensor": "Close",
+  "crew": "1 pilote",
+  "enc": 8,
+  "pass": 0,
+  "consumables": "1 jour",
+  "price": 55000,
+  "rarity": 4,
+  "hp": 2,
+  "weapons": [
+   {
+    "name": "Canons laser légers jumelés",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 5,
+    "crit": 3,
+    "q": [
+     "Jumelé 1"
+    ]
+   },
+   {
+    "name": "Lance-missiles à concussion jumelés",
+    "range": "Short",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 6,
+    "crit": 3,
+    "q": [
+     "Brèche 4",
+     "Cadence lente 1",
+     "Jumelé 1",
+     "Munitions limitées 6",
+     "Projectile guidé 3",
+     "Souffle 4"
+    ]
+   }
+  ],
+  "desc": "Le minuscule Z-95 fit son apparition un peu avant la Guerre des Clones. Fruit de la collaboration entre Incom et la Corporation Subpro, il était alors considéré comme l'un des meilleurs chasseurs qui soient. Le Chasseur de Têtes est un vaisseau monoplace de petite taille pourvu de boucliers et de blindage légers ainsi que d'un multiréacteur Incom 44-a5. Conçu pour les combats rapprochés, il s'avère très rapide et maniable grâce à son fuselage aérodynamique ainsi qu'à l'excellent rendement de son moteur. Initialement classé comme intercepteur et équipé de triples canons blaster, le Chasseur de Têtes a rapidement fait ses preuves dans les duels et les affrontements spatiaux. Il a connu de nombreuses révisions depuis sa conception et il est désormais doté de canons laser jumelés ainsi que de lance-missiles à concussion.</p><p>Le Z-95 demeure populaire en dépit de son âge, et bien qu'il soit dépassé par des vaisseaux plus modernes comme l'Y-wing de Koensayr ou le tout nouveau X-wing d'Incom (qui partage d'ailleurs plus qu'un simple air de ressemblance avec le Chasseur de Têtes), il continue de se vendre comme des petits pains dans les territoires de la Bordure extérieure."
+ },
+ {
+  "name": "Patrouilleur Skipray GAT-12H",
+  "cat": "Chasseurs et patrouilleurs",
+  "space": true,
+  "sil": 4,
+  "speed": 4,
+  "handling": -1,
+  "def": [
+   2,
+   null,
+   null,
+   1
+  ],
+  "armour": 4,
+  "hull": 20,
+  "strain": 15,
+  "model": "patrouilleur/Skipray",
+  "maker": "Systèmes de Flotte Sienar",
+  "hyper": 2,
+  "hyperBackup": 15,
+  "navi": "oui",
+  "sensor": "Short",
+  "crew": "1 pilote, 1 copilote, 1 opérateur des senseurs et comms, 2 artilleurs",
+  "enc": 20,
+  "pass": 0,
+  "consumables": "1 mois",
+  "price": 150000,
+  "rarity": 6,
+  "hp": 2,
+  "weapons": [
+   {
+    "name": "Triple canon ionique léger",
+    "range": "Close",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 5,
+    "crit": 4,
+    "q": [
+     "Ionique",
+     "Jumelé 2"
+    ]
+   },
+   {
+    "name": "Canons laser moyens jumelés (tourelle dorsale)",
+    "range": "Close",
+    "arcs": [
+     "fore",
+     "aft",
+     "port",
+     "starboard"
+    ],
+    "dmg": 6,
+    "crit": 3,
+    "q": [
+     "Jumelé 1"
+    ]
+   },
+   {
+    "name": "Lance-torpilles à protons",
+    "range": "Short",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 8,
+    "crit": 2,
+    "q": [
+     "Brèche 6",
+     "Cadence lente 1",
+     "Munitions limitées 5",
+     "Projectile guidé 2",
+     "Souffle 6"
+    ]
+   },
+   {
+    "name": "Lance-missiles à concussion",
+    "range": "Short",
+    "arcs": [
+     "fore"
+    ],
+    "dmg": 6,
+    "crit": 3,
+    "q": [
+     "Brèche 4",
+     "Cadence lente 1",
+     "Munitions limitées 8",
+     "Projectile guidé 3",
+     "Souffle 4"
+    ]
+   }
+  ],
+  "desc": "Autre invention des Systèmes de Flotte Sienar datant d'avant la Guerre des Clones, le Skipray est un vaisseau d'assaut lourdement blindé et armé, inspiré par la canonnière Turbostorm qu'employait l'Ancienne République. Présenté comme un patrouilleur par les brochures des SFS, le Skipray échappe en fait à toute véritable classification. Légèrement plus grand qu'un chasseur lourd typique, ce vaisseau dispose d'un habitacle étroit et fortement renforcé à l'avant ainsi que d'une nacelle cylindrique d'où jaillissent deux ailerons. Le module de proue permet à quatre membres d'équipage de prendre place dans une cabine de commandement blindée. La partie avant abrite aussi le gros de l'armement du vaisseau, dont un canon ionique, un lance-torpilles à protons et des lance-missiles à concussion regroupés sous le nez, auxquels vient s'ajouter un canon laser jumelé monté sur tourelle, installé sur la crête de l'appareil.</p><p>Le Skipray avait été conçu à l'origine pour répondre aux besoins de la Marine impériale, qui était à la recherche d'un chasseur lourd capable de voyager dans l'hyperespace. L'amirauté finit par rejeter le patrouilleur à peu près totalement. Les Systèmes de Flotte Sienar réagirent à la nouvelle en proposant le Skipray au grand public et il est depuis devenu fort populaire auprès des forces de sécurité planétaires, des particuliers, des mercenaires et des pirates écumant la Bordure extérieure. Les Skipray conviennent parfaitement aux missions de patrouille et font de redoutables adversaires, aisément capables de menacer des vaisseaux qui font plusieurs fois leur taille."
+ }
+]

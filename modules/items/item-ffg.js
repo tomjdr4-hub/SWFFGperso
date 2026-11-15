@@ -1,0 +1,832 @@
+import ItemBaseFFG from "./itembase-ffg.js";
+import PopoutEditor from "../popout-editor.js";
+import ActorOptions from "../actors/actor-ffg-options.js";
+import ImportHelpers from "../importer/import-helpers.js";
+import ModifierHelpers from "../helpers/modifiers.js";
+import Helpers from "../helpers/common.js";
+import ItemHelpers from "../helpers/item-helpers.js";
+
+/**
+ * Extend the basic Item with some very simple modifications.
+ * @extends {Item}
+ */
+export class ItemFFG extends ItemBaseFFG {
+  /** @override **/
+  async _preCreate(data, operation, user) {
+    const defaultImages = {
+      armour: "systems/starwarsffg-v14/images/defaults/items/armor.png",
+      itemattachment: "systems/starwarsffg-v14/images/defaults/items/attachment.png",
+      gear: "systems/starwarsffg-v14/images/defaults/items/gear.png",
+      itemmodifier: "systems/starwarsffg-v14/images/defaults/items/itemmodifier.png",
+      weapon: "systems/starwarsffg-v14/images/defaults/items/weapon.png",
+    }
+    if (game.user.id === user.id && (!data?.img || data?.img === "icons/svg/mystery-man.svg")) {
+      if (Object.keys(defaultImages).includes(data.type)) {
+        this.updateSource({img: defaultImages[data.type]});
+      } else {
+        // fall back to the old default
+        this.updateSource({img: "icons/svg/item-bag.svg"});
+      }
+    }
+    return {data, operation, user};
+  }
+
+  /** @override */
+  async _onCreate(data, options, user) {
+    if (user !== game.user.id) {
+      // only run onCreate for the user actually performing the update
+      return;
+    }
+    let force = false;
+    // Ensure we're dealing with an embedded item
+    if (this.isEmbedded && this.actor) {
+      // If this is a weapon or armour item we must ensure its modifier-adjusted values are saved to the database
+      if (["weapon", "shipweapon", "armour"].includes(this.type)) {
+        let that = this.toObject(true);
+        delete that._id;
+        await this.update(that);
+        force = true;
+      }
+    }
+
+    // on create, run the first-time setup for deep data
+    if (this.type === 'forcepower') {
+      await this.update(
+          this._prepareForcePowers()
+      );
+    } else if (this.type === 'signatureability') {
+      await this.update(
+          this._prepareSignatureAbilities()
+      );
+    } else if (this.type === 'specialization') {
+      await this.update(
+          await this._prepareSpecializations()
+      );
+    }
+
+    await super._onCreate(data, options, user);
+
+    await this._onCreateAEs(options, force);
+  }
+
+  async _onCreateAEs(options, force=false) {
+    if (["species", "gear", "weapon", "armour", "shipattachment", "career", "specialization"].includes(this.type) && (!options.parent || force)) {
+      const existingEffects = this.getEmbeddedCollection("ActiveEffect");
+      // items are "created" when they are pulled from Compendiums, so don't duplicate Active Effects
+      const inherentEffect = existingEffects.find(i => i.name === `(inherent)`);
+      if (!inherentEffect) {
+        // _onCreate is not awaited, so the importer's own call can land while this one is still
+        // running; join it instead of creating a second effect
+        if (this._inherentAECreation) {
+          await this._inherentAECreation;
+          return;
+        }
+        CONFIG.logger.debug(`Creating inherent Active Effect for item ${this.name}`);
+        const effects = {
+          name: `(inherent)`,
+          img: this.img,
+          system: {changes: []},
+        };
+        if (this.type === "species") {
+          for (const attribute of Object.keys(this.system.attributes)) {
+            if (attribute.startsWith("attr")) {
+              // migrated data may contain attributes that the user has added, and we don't want this in the inherent effect
+              continue;
+            }
+            const explodedMods = ModifierHelpers.explodeMod(
+              this.system.attributes[attribute].modtype,
+              attribute
+            );
+            for (const cur_mod of explodedMods) {
+              const path = ModifierHelpers.getModKeyPath(
+                cur_mod['modType'],
+                cur_mod['mod']
+              );
+              effects.system.changes.push({
+                key: path,
+                type: "add",
+                value: this.system.attributes[attribute].value,
+              });
+            }
+          }
+        } else if (["gear", "weapon"].includes(this.type)) {
+          const explodedMods = ModifierHelpers.explodeMod(
+            "Stat",
+            "Encumbrance"
+          );
+          for (const cur_mod of explodedMods) {
+            const path = ModifierHelpers.getModKeyPath(
+              cur_mod['modType'],
+              cur_mod['mod']
+            );
+            effects.system.changes.push({
+              key: path,
+              type: "add",
+              value: 0,
+            });
+          }
+        } else if (this.type === "armour") {
+          for (const key of ["Encumbrance", "Defence", "Soak"]) {
+            const explodedMods = ModifierHelpers.explodeMod(
+              "Stat",
+              key
+            );
+            for (const cur_mod of explodedMods) {
+              const path = ModifierHelpers.getModKeyPath(
+                cur_mod['modType'],
+                cur_mod['mod']
+              );
+              effects.system.changes.push({
+                key: path,
+                type: "add",
+                value: 0,
+              });
+            }
+          }
+        } else if (this.type === "shipattachment") {
+          const explodedMods = ModifierHelpers.explodeMod(
+            "Vehicle Stat",
+            "Vehicle.Hardpoints"
+          );
+          for (const cur_mod of explodedMods) {
+            const path = ModifierHelpers.getModKeyPath(
+              cur_mod['modType'],
+              cur_mod['mod']
+            );
+            effects.system.changes.push({
+              key: path,
+              type: "add",
+              value: 0,
+            });
+          }
+        } else if (["career", "specialization"].includes(this.type)) {
+          // ItemHelpers.itemUpdate fills these in on a sheet submit, but an item created through
+          // the API - an import, or the PC wizard's compendium - never sees one, and was left with
+          // eight placeholder changes that marked nothing (#2164)
+          const slots = this.type === "career" ? 8 : 5;
+          for (let i = 0; i < slots; i++) {
+            const skill = this.system.careerSkills?.[`careerSkill${i}`];
+            effects.system.changes.push({
+              key: skill && skill !== "(none)" ? `system.skills.${skill}.careerskill` : "(none)",
+              type: "add",
+              value: true,
+            });
+          }
+        }
+
+        CONFIG.logger.debug(`Creating Active Effect for ${this.name}/${this.type} on item creation`);
+        CONFIG.logger.debug(effects);
+        this._inherentAECreation = this.createEmbeddedDocuments("ActiveEffect", [effects]);
+        await this._inherentAECreation;
+        delete this._inherentAECreation;
+      }
+    }
+  }
+
+  /** @override */
+  async _onUpdate(changed, options, userId) {
+    CONFIG.logger.debug("Performing _onUpdate of item");
+    await super._onUpdate(changed, options, userId);
+    if (userId !== game.user.id) {
+      // only run onCreate for the user actually performing the update
+      return;
+    }
+
+    const existingEffects = this.getEmbeddedCollection("ActiveEffect");
+    CONFIG.logger.debug(`On item ${this.name} update, found the following active effects:`);
+    CONFIG.logger.debug(existingEffects);
+    // update active effects from the item itself (e.g., stat boosts on species)
+    const itemEffect = existingEffects.find(i => i.name === `(inherent)`);
+    if (itemEffect) {
+      CONFIG.logger.debug(`And located the following effects directly from this item: ${JSON.stringify(itemEffect)}`);
+    } else {
+      CONFIG.logger.debug("Unable to locate any inherent effect. This may be expected.");
+    }
+    if (itemEffect && Object.keys(changed).includes("system") && Object.keys(changed.system).includes("attributes")) {
+      const newChanges = foundry.utils.deepClone(itemEffect.system.changes);
+      for (const updateKey of Object.keys(changed.system.attributes)) {
+        const existingChange = newChanges.find(c => c.key.startsWith(`system.attributes.${updateKey}`));
+        if (existingChange) {
+          existingChange.value = parseInt(changed.system.attributes[updateKey].value);
+        }
+      }
+      await itemEffect.update({"system.changes": newChanges});
+    }
+
+    // iterate over the changed data to look for any changes to attributes
+    if (changed?.system?.attributes) {
+      for (const attrKey of Object.keys(changed.system.attributes)) {
+        const existingEffect = existingEffects.find(i => i.name === attrKey);
+        const attr = this.system.attributes[attrKey];
+        // Defensive: only explode mods if modtype and mod are defined
+        let explodedMods = [];
+        if (attr && typeof attr.modtype !== 'undefined' && typeof attr.mod !== 'undefined') {
+          explodedMods = ModifierHelpers.explodeMod(attr.modtype, attr.mod);
+        }
+
+        const changes = [];
+        for (const curMod of explodedMods) {
+          changes.push({
+            key: ModifierHelpers.getModKeyPath(curMod['modType'], curMod['mod']),
+            type: "add",
+            value: attr?.value,
+          });
+        }
+
+        if (existingEffect) {
+          // existing entry
+          CONFIG.logger.debug(`> Staged AE changes for update: ${JSON.stringify(changes)}`);
+          await existingEffect.update({
+            system: {changes: changes},
+          });
+        }
+      }
+    }
+
+    // handle equip / unequip by suspending / unsuspending AEs
+    const updatedExistingEffects = this.getEmbeddedCollection("ActiveEffect");
+    if (changed?.system?.equippable && updatedExistingEffects) {
+      const equipped = changed.system.equippable.equipped;
+      CONFIG.logger.debug("caught equip / unequip, checking if Active Effect state should be synced");
+      await ItemHelpers.syncAEStatus(this, updatedExistingEffects);
+      for (const effect of updatedExistingEffects) {
+        if (await ItemHelpers.shouldUpdateAEStatus(this, effect)) {
+          await ItemHelpers.updateEncumbranceOnEquip(this, effect, equipped);
+          await effect.update({disabled: !equipped});
+        }
+      }
+    }
+  }
+
+  /**
+   * Augment the basic Item data model with additional dynamic data.
+   */
+  async prepareData() {
+    await super.prepareData();
+
+    // Get the Item's data
+    const item = this;
+    const actor = this.actor ? this.actor : {};
+    const data = item.system;
+
+    if (!item.flags["starwarsffg-v14"]) {
+      await item.updateSource({
+        flags: {
+          "starwarsffg-v14": {
+            isCompendium: !!this.compendium,
+            ffgUuid: this.parent?.system ? this.uuid : null,
+            ffgIsOwned: this.isEmbedded,
+            loaded: false
+          }
+        }
+      });
+    } else {
+      if (this.compendium) {
+        item.flags["starwarsffg-v14"].isCompendium = true;
+        // Temporary check on this.parent.data to avoid initialisation failing in Foundry VTT 0.8.6
+        if (this.uuid) item.flags["starwarsffg-v14"].ffgUuid = this.uuid;
+      } else {
+        item.flags["starwarsffg-v14"].isCompendium = false;
+        item.flags["starwarsffg-v14"].ffgIsOwned = false;
+        if (this.isEmbedded) {
+          item.flags["starwarsffg-v14"].ffgIsOwned = true;
+          // Temporary check on this.parent.data to avoid initialisation failing in Foundry VTT 0.8.6
+          if (this.parent) item.flags["starwarsffg-v14"].ffgUuid = this.uuid;
+        } else if (item._id) {
+          item.flags["starwarsffg-v14"].ffgTempId = item._id;
+        }
+      }
+    }
+
+    data.renderedDesc = await PopoutEditor.renderDiceImages(data.description, actor);
+
+    // an attachment's Modifications only come back with a total when sources are asked for
+    const fromAttachment = (attachment, modifications, key, modtype) =>
+      ModifierHelpers.getCalculatedValueFromCurrentAndArray(attachment, modifications, key, modtype, true).total;
+
+    // a modifier set directly on the item counts regardless of if the item is on an actor
+    const fromSelf = (key, modtype) => parseInt(
+      ModifierHelpers.getCalculatedValueFromCurrentAndArray(this, [], key, modtype),
+      10
+    ) || 0;
+
+    // remember what a modifier contributed, so the gear list can show where a value came from
+    const record = (stat, name, value) => {
+      const amount = parseInt(value, 10) || 0;
+      if (amount) {
+        stat.sources.push({ name: name, value: amount > 0 ? `+${amount}` : `${amount}` });
+      }
+      return amount;
+    };
+
+    // the same, for a value which is simply the sum of what modifies it
+    const apply = (stat, name, value) => {
+      stat.adjusted += record(stat, name, value);
+    };
+
+    // perform localisation of dynamic values
+    switch (this.type) {
+      case "weapon":
+      case "shipweapon":
+        // Apply item attachments / modifiers
+        data.damage.value = parseInt(data.damage.value, 10);
+        data.crit.value = parseInt(data.crit.value, 10);
+        data.encumbrance.value = parseInt(data.encumbrance.value, 10);
+        data.price.value = parseInt(data.price.value, 10);
+        data.rarity.value = parseInt(data.rarity.value, 10);
+        data.hardpoints.value = parseInt(data.hardpoints.value, 10);
+
+        data.range.adjusted = data.range.value;
+        data.damage.adjusted = parseInt(data.damage.value, 10);
+        data.crit.adjusted = parseInt(data.crit.value, 10);
+        data.damage.sources = [];
+        data.crit.sources = [];
+        data.range.sources = [];
+        data.hardpoints.sources = [];
+        data.encumbrance.adjusted = parseInt(data.encumbrance.value, 10);
+        data.price.adjusted = parseInt(data.price.value, 10);
+        data.rarity.adjusted = parseInt(data.rarity.value, 10);
+        data.hardpoints.adjusted = parseInt(data.hardpoints.value, 10);
+
+        data.adjusteditemmodifier = [];
+
+        const rangeSetting = (this.type === "shipweapon") ? CONFIG.FFG.vehicle_ranges : CONFIG.FFG.ranges;
+
+        // range is a rung on a ladder, not a number, so every source's steps are summed here and
+        // walked up the band once, below
+        let rangeSteps = record(data.range, this.name, fromSelf("range", "Weapon Stat"));
+
+        apply(data.damage, this.name, fromSelf("damage", "Weapon Stat"));
+        apply(data.crit, this.name, fromSelf("critical", "Weapon Stat"));
+        data.encumbrance.adjusted += fromSelf("encumbrance", "Weapon Stat");
+        data.price.adjusted += fromSelf("price", "Weapon Stat");
+        data.rarity.adjusted += fromSelf("rarity", "Weapon Stat");
+        apply(data.hardpoints, this.name, fromSelf("hardpoints", "Weapon Stat"));
+
+        if (data?.itemmodifier) {
+          data.itemmodifier.forEach((modifier) => {
+            if (modifier?.system) {
+              modifier.system.rank_current = modifier.system.rank;
+            }
+            data.adjusteditemmodifier.push({ ...modifier });
+            apply(data.damage, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "damage", "Weapon Stat"));
+            apply(data.crit, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "critical", "Weapon Stat"));
+            data.encumbrance.adjusted += ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "encumbrance", "Weapon Stat");
+            data.price.adjusted += ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "price", "Weapon Stat");
+            data.rarity.adjusted += ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "rarity", "Weapon Stat");
+            apply(data.hardpoints, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "hardpoints", "Weapon Stat"));
+            rangeSteps += record(data.range, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "range", "Weapon Stat"));
+          });
+        }
+
+        if (data?.itemattachment) {
+          data.itemattachment.forEach((attachment) => {
+            const activeModifiers = attachment.system?.itemmodifier?.filter((i) => i?.system?.active) || [];
+            apply(data.damage, attachment.name, fromAttachment(attachment, activeModifiers, "damage", "Weapon Stat"));
+            apply(data.crit, attachment.name, fromAttachment(attachment, activeModifiers, "critical", "Weapon Stat"));
+            if (data.crit.adjusted < 1) data.crit.adjusted = 1;
+            data.encumbrance.adjusted += fromAttachment(attachment, activeModifiers, "encumbrance", "Weapon Stat");
+            data.price.adjusted += fromAttachment(attachment, activeModifiers, "price", "Weapon Stat");
+            data.rarity.adjusted += fromAttachment(attachment, activeModifiers, "rarity", "Weapon Stat");
+            apply(data.hardpoints, attachment.name, fromAttachment(attachment, activeModifiers, "hardpoints", "Weapon Stat"));
+            rangeSteps += record(data.range, attachment.name, fromAttachment(attachment, activeModifiers, "range", "Weapon Stat"));
+
+            if (attachment?.system?.itemmodifier) {
+              const activeMods = attachment.system.itemmodifier.filter((i) => i?.system?.active);
+
+              activeMods.forEach((am) => {
+                const foundItem = data.adjusteditemmodifier.find((i) => i.name === am.name);
+
+                if (foundItem) {
+                  if (foundItem.system?.rank) {
+                    // each source brings all of its own ranks, not a single one
+                    foundItem.system.rank_current = parseInt(foundItem.system.rank_current, 10) + (parseInt(am.system?.rank, 10) || 1);
+                  }
+                } else {
+                  if (am.system?.rank) {
+                    am.system.rank_current = parseInt(am.system.rank, 10);
+                  } else {
+                    am.system.rank_current = null;
+                  }
+                  data.adjusteditemmodifier.push({...am, adjusted: true});
+                }
+              });
+            }
+          });
+        }
+
+        const rangeBands = Object.values(rangeSetting);
+        const currentRangeIndex = rangeBands.findIndex((r) => r.value === data.range.value);
+        if (rangeSteps && currentRangeIndex > -1) {
+          let newRange = currentRangeIndex + rangeSteps;
+          if (newRange < 0) newRange = 0;
+          if (newRange >= rangeBands.length) newRange = rangeBands.length - 1;
+
+          data.range.adjusted = rangeBands[newRange].value;
+        }
+
+        if (this.isEmbedded && this.actor && this.actor.type !== "vehicle" && ModifierHelpers.shouldApplyCharacteristicToDamage(data)) {
+          apply(data.damage, data.characteristic.value, actor.system.characteristics[data.characteristic.value].value);
+        }
+
+        const rangeLabel = (this.type === "weapon" ? `SWFFG.WeaponRange` : `SWFFG.VehicleRange`) + this._capitalize(data.range.adjusted);
+        data.range.label = rangeLabel;
+
+        break;
+      case "armour":
+        data.soak.value = parseInt(data.soak.value, 10);
+        data.defence.value = parseInt(data.defence.value, 10);
+        data.encumbrance.value = parseInt(data.encumbrance.value, 10);
+        data.price.value = parseInt(data.price.value, 10);
+        data.rarity.value = parseInt(data.rarity.value, 10);
+        data.hardpoints.value = parseInt(data.hardpoints.value, 10);
+
+        data.soak.adjusted = parseInt(data.soak.value, 10);
+        data.defence.adjusted = parseInt(data.defence.value, 10);
+        data.soak.sources = [];
+        data.defence.sources = [];
+        data.hardpoints.sources = [];
+        data.encumbrance.adjusted = parseInt(data.encumbrance.value, 10);
+        data.price.adjusted = parseInt(data.price.value, 10);
+        data.rarity.adjusted = parseInt(data.rarity.value, 10);
+        data.hardpoints.adjusted = parseInt(data.hardpoints.value, 10);
+
+        data.adjusteditemmodifier = [];
+
+        apply(data.soak, this.name, fromSelf("soak", "Armor Stat") + fromSelf("Soak", "Stat"));
+        apply(data.defence, this.name, fromSelf("defence", "Armor Stat"));
+        data.encumbrance.adjusted += fromSelf("encumbrance", "Armor Stat") + fromSelf("Encumbrance", "Stat");
+        data.price.adjusted += fromSelf("price", "Armor Stat");
+        data.rarity.adjusted += fromSelf("rarity", "Armor Stat");
+        apply(data.hardpoints, this.name, fromSelf("hardpoints", "Armor Stat"));
+
+        if (data?.itemmodifier) {
+          data.itemmodifier.forEach((modifier) => {
+            if (modifier?.system) {
+              modifier.system.rank_current = modifier.system.rank;
+            }
+            data.adjusteditemmodifier.push({ ...modifier });
+            apply(data.soak, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "soak", "Armor Stat"));
+            // a quality raises soak as a character stat, the same key an attachment's qualities use
+            apply(data.soak, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "Soak", "Stat"));
+            apply(data.defence, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "defence", "Armor Stat"));
+            data.encumbrance.adjusted += ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "encumbrance", "Armor Stat");
+            data.price.adjusted += ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "price", "Armor Stat");
+            data.rarity.adjusted += ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "rarity", "Armor Stat");
+            apply(data.hardpoints, modifier.name, ModifierHelpers.getCalculatedValueFromCurrentAndArray(modifier, [], "hardpoints", "Armor Stat"));
+          });
+        }
+
+        if (data?.itemattachment) {
+          data.itemattachment.forEach((attachment) => {
+            const activeModifiers = attachment.system?.itemmodifier?.filter((i) => i?.system?.active) || [];
+            apply(data.soak, attachment.name, fromAttachment(attachment, activeModifiers, "soak", "Armor Stat"));
+            apply(data.soak, attachment.name, fromAttachment(attachment, activeModifiers, "Soak", "Stat"));
+            apply(data.defence, attachment.name, fromAttachment(attachment, activeModifiers, "defence", "Armor Stat"));
+            data.encumbrance.adjusted += fromAttachment(attachment, activeModifiers, "encumbrance", "Armor Stat");
+            data.price.adjusted += fromAttachment(attachment, activeModifiers, "price", "Armor Stat");
+            data.rarity.adjusted += fromAttachment(attachment, activeModifiers, "rarity", "Armor Stat");
+            apply(data.hardpoints, attachment.name, fromAttachment(attachment, activeModifiers, "hardpoints", "Armor Stat"));
+
+            if (attachment?.system?.itemmodifier) {
+              const activeMods = attachment.system.itemmodifier.filter((i) => i?.system?.active);
+
+              activeMods.forEach((am) => {
+                const foundItem = data.adjusteditemmodifier.find((i) => i.name === am.name);
+
+                if (foundItem) {
+                  if (foundItem.system?.rank) {
+                    // each source brings all of its own ranks, not a single one
+                    foundItem.system.rank_current = parseInt(foundItem.system.rank_current, 10) + (parseInt(am.system?.rank, 10) || 1);
+                  }
+                } else {
+                  if (am.system?.rank) {
+                    am.system.rank_current = parseInt(am.system.rank, 10);
+                  } else {
+                    am.system.rank_current = null;
+                  }
+                  data.adjusteditemmodifier.push({...am, adjusted: true});
+                }
+              });
+            }
+          });
+        }
+
+        break;
+      case "talent":
+        const cleanedActivationName = data.activation.value.replace(/[\W_]+/g, "");
+        const activationId = `SWFFG.TalentActivations${this._capitalize(cleanedActivationName)}`;
+        data.activation.label = activationId;
+        break;
+
+      case "gear":
+        data.encumbrance.value = parseInt(data.encumbrance.value, 10);
+        break;
+
+      default:
+    }
+
+    if (["weapon", "armour", "shipweapon"].includes(this.type)) {
+      // get all item attachments
+      let totalHPUsed = 0;
+
+      if (data?.itemattachment?.length) {
+        data.itemattachment.forEach((attachment) => {
+          const used = attachment.system?.hardpoints?.value || 0;
+          totalHPUsed += used;
+          // an attachment spends hardpoints rather than granting them
+          record(data.hardpoints, attachment.name, -used);
+        });
+      }
+
+      data.hardpoints.current = data.hardpoints.adjusted - totalHPUsed;
+    }
+
+    if (this.type === "forcepower") {
+      this._prepareForcePowers();
+    }
+
+    if (this.type === "specialization") {
+      this._prepareSpecializations();
+    }
+
+    if (this.type === "signatureability") {
+      this._prepareSignatureAbilities();
+    }
+  }
+  /**
+   * Capitalize string
+   * @param  {String} s   String value to capitalize
+   */
+  _capitalize(s) {
+    if (typeof s !== "string") return "";
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  _prepareTalentTrees(collection, itemType, listProperty, hasGlobalList) {
+    const item = this;
+    const talents = item.system[collection];
+    let rowcount = 0;
+    const controls = Object.keys(talents).filter((item) => {
+      return item.includes(itemType);
+    });
+
+    let itemList = [];
+
+    for (let upgrade of controls) {
+      if (upgrade.includes(itemType)) {
+        if (talents[upgrade].islearned) {
+          const item = JSON.parse(JSON.stringify(talents[upgrade]));
+
+          if (item.isRanked || listProperty === "powerUpgrades") {
+            item.rank = 1;
+          } else {
+            item.rank = "N/A";
+          }
+
+          let index = itemList.findIndex((obj) => {
+            return obj.name === item.name;
+          });
+
+          if (index < 0 || (!item.isRanked && listProperty !== "powerUpgrades")) {
+            itemList.push(item);
+          } else {
+            itemList[index].rank += 1;
+          }
+        }
+
+        if (itemType === "talent") {
+          const id = parseInt(upgrade.replace("talent", ""), 10);
+          talents[upgrade].cost = (Math.trunc(id / 4) + 1) * 5;
+        }
+
+        if (typeof talents[upgrade].visible === "undefined") {
+          talents[upgrade].visible = true;
+        }
+
+        if (talents[upgrade].visible) {
+          if (!talents[upgrade].size || talents[upgrade].size === "single") {
+            talents[upgrade].size = "single";
+            talents[upgrade].canSplit = false;
+            rowcount += 1;
+          } else if (talents[upgrade].size === "double") {
+            rowcount += 2;
+            talents[upgrade].canSplit = true;
+          } else if (talents[upgrade].size === "triple") {
+            rowcount += 3;
+            talents[upgrade].canSplit = true;
+          } else {
+            rowcount += 4;
+            talents[upgrade].canSplit = true;
+          }
+        }
+
+        talents[upgrade].canCombine = false;
+        talents[upgrade].canLinkTop = true;
+        talents[upgrade].canLinkRight = true;
+
+        if (rowcount === 4) {
+          talents[upgrade].canLinkRight = false;
+        }
+
+        const controlNumber = parseInt(upgrade.replace(itemType, ""), 10);
+
+        if (rowcount < 4) {
+          talents[upgrade].canCombine = true;
+        } else {
+          rowcount = 0;
+        }
+      }
+    }
+
+    itemList.sort((a, b) => {
+      return a.name - b.name;
+    });
+
+    item[listProperty] = itemList;
+    return {system: {collection: talents}};
+  }
+
+  async _prepareSpecializations() {
+    return this._prepareTalentTrees("talents", "talent", "talentList");
+  }
+
+  /**
+   * Prepare Force Power Item Data
+   */
+  _prepareForcePowers() {
+    return this._prepareTalentTrees("upgrades", "upgrade", "powerUpgrades");
+  }
+
+  _prepareSignatureAbilities() {
+    return this._prepareTalentTrees("upgrades", "upgrade", "powerUpgrades");
+  }
+
+  _updateSpecializationTalentReference(specializationTalentItem, talentItem) {
+    CONFIG.logger.debug(`Updating Specializations Talent ${specializationTalentItem.name} with ${talentItem.name}`);
+    specializationTalentItem.name = talentItem.name;
+    specializationTalentItem.description = talentItem.system.description;
+    specializationTalentItem.activation = talentItem.system.activation.value;
+    specializationTalentItem.activationLabel = talentItem.system.activation.label;
+    specializationTalentItem.isRanked = talentItem.system.ranks.ranked;
+    specializationTalentItem.isForceTalent = talentItem.system.isForceTalent;
+    specializationTalentItem.isConflictTalent = talentItem.system.isConflictTalent;
+    specializationTalentItem.attributes = talentItem.system.attributes;
+  }
+
+  /**
+   * Prepare and return details of the item for display in inventory or chat.
+   */
+  async getItemDetails() {
+    const data = foundry.utils.duplicate(this.system);
+
+    // Item type specific properties
+    const props = [];
+    const purchasedUpgrades = [];
+    const specializations = [];
+    const signatureAbilities = [];
+
+    data.prettyDesc = await PopoutEditor.renderDiceImages(data.description, this.actor);
+
+    if (["weapon", "armor", "armour", "shipweapon"].includes(this.type)) {
+      const sheetData = (await this.sheet.getData()).data;
+      data.doNotSubmit = sheetData.doNotSubmit;
+      data.enrichedSpecial = sheetData.enrichedSpecial;
+    }
+
+    if (["talent"].includes(this.type) && data.longDesc) {
+      data.description = data.longDesc;
+    }
+
+    if (this.type === "weapon") {
+      const ammoEnabled = this.getFlag("starwarsffg-v14", "config.enableAmmo");
+      if (ammoEnabled) {
+        props.push(`Ammo: ${data.ammo.value}/${data.ammo.max}`);
+      }
+    }
+
+    if (this.type === "forcepower" || this.type === "signatureability") {
+      //Display upgrades
+
+      // Get learned upgrades
+      const upgrades = Object.values(data.upgrades).filter((up) => up.islearned);
+
+      const upgradeDescriptions = [];
+
+      for (const up of upgrades) {
+        let index = upgradeDescriptions.findIndex((obj) => {
+          return obj.name === up.name;
+        });
+
+        if (index >= 0) {
+          upgradeDescriptions[index].rank += 1;
+        } else {
+          upgradeDescriptions.push({
+            name: up.name,
+            description: await foundry.applications.ux.TextEditor.enrichHTML(up.description),
+            rank: 1,
+          });
+        }
+      }
+
+      for (const upd of upgradeDescriptions) {
+        props.push(`<div class="ffg-sendtochat hover" onclick="">${upd.name} ${upd.rank}
+          <div class="tooltip2">
+            ${upd.description}
+          </div>
+        </div>`);
+        purchasedUpgrades.push({
+          name: upd.name,
+          rank: upd.rank,
+          description: upd.description,
+        })
+      }
+    }
+    // General equipment properties
+    else if (this.type !== "talent") {
+      if (data.hasOwnProperty("doNotSubmit")) {
+        const modifiers = data.doNotSubmit.qualities;
+        const qualities = [];
+        for (const modifier of modifiers) {
+          qualities.push(`
+          <div class='item-pill-hover hover-tooltip' data-item-type="itemmodifier" data-item-embed-name="${ modifier.name }" data-item-embed-img="${ modifier.img }" data-desc="${ (await foundry.applications.ux.TextEditor.enrichHTML(modifier.description)).replaceAll('"', "'") }" data-item-ranks="${ modifier.totalRanks }" data-tooltip="Loading...">
+            ${modifier.name} ${modifier.totalRanks === null || modifier.totalRanks === 0 ? "" : modifier.totalRanks}
+          </div>
+          `);
+        }
+
+        props.push(`<div>${game.i18n.localize("SWFFG.ItemDescriptors")}: <ul>${qualities.join("")}<ul></div>`);
+      }
+
+      if (data.hasOwnProperty("encumbrance")) {
+        props.push(`${game.i18n.localize("SWFFG.Encumbrance")}: ${data.encumbrance?.adjusted ? data.encumbrance.adjusted : data.encumbrance.value}`);
+      }
+      if (data.hasOwnProperty("price")) {
+        props.push(`${game.i18n.localize("SWFFG.ItemsPrice")}: ${data.price?.adjusted ? data.price.adjusted : data.price.value}`);
+      }
+      if (data.hasOwnProperty("rarity")) {
+        props.push(`${game.i18n.localize("SWFFG.ItemsRarity")}: ${data.rarity?.adjusted ? data.rarity.adjusted : data.rarity.value} ${data.rarity.isrestricted ? "<span class='restricted'>" + game.i18n.localize("SWFFG.IsRestricted") + "</span>" : ""}`);
+      }
+      if (data.hasOwnProperty("talents")) {
+        for (const talentKey of Object.keys(data.talents)) {
+          const talent = data.talents[talentKey];
+          if (talent?.islearned) {
+            purchasedUpgrades.push({
+              name: talent.name,
+              rank: 0,
+              description: talent.enrichedDescription,
+            });
+          }
+        }
+      }
+      if (data.hasOwnProperty("specializations")) {
+        for (const specializationKey of Object.keys(data.specializations)) {
+          const specialization = data.specializations[specializationKey];
+          const fullSpecialization = fromUuidSync(specialization.source);
+          specializations.push({
+            name: specialization.name,
+            uuid: specialization.uuid,
+            description: fullSpecialization?.system?.description,
+            img: fullSpecialization?.img,
+          });
+        }
+      }
+      if (data.hasOwnProperty("signatureabilities")) {
+        for (const SAKey of Object.keys(data.signatureabilities)) {
+          const signatureAbility = data.signatureabilities[SAKey];
+          const fullSignatureAbility = fromUuidSync(signatureAbility.source);
+          signatureAbilities.push({
+            name: signatureAbility.name,
+            uuid: signatureAbility.uuid,
+            description: fullSignatureAbility?.system?.description,
+            img: fullSignatureAbility?.img,
+          });
+        }
+      }
+    }
+
+    // Weapon properties
+    if (this.type === "weapon") {
+      if (data.hasOwnProperty("skill")) {
+        const cleanedSkillName = data.skill.value.replace(/[\W_]+/g, "");
+        const skillLabel = "SWFFG.SkillsName" + cleanedSkillName;
+        props.push(`Skill: ${game.i18n.localize(skillLabel)}`);
+      }
+    }
+
+    // Talent properties
+    if (data.hasOwnProperty("isForceTalent")) {
+      if (data.isForceTalent) props.push(game.i18n.localize("SWFFG.ForceTalent"));
+    }
+    if (data.hasOwnProperty("ranks")) {
+      if (data.ranks.ranked) props.push(game.i18n.localize("SWFFG.Ranked"));
+    }
+
+    // Filter properties and return
+    data.properties = props.filter((p) => !!p);
+    data.textProperties = purchasedUpgrades;
+    data.specializations = specializations;
+    data.signatureAbilities = signatureAbilities;
+    return data;
+  }
+}

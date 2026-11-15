@@ -1,0 +1,18 @@
+<div class="item-display" data-item-id="{{system._id}}">
+  {{#iff (defaultImage system.img) '!=' true}}
+    <img class="item-image" src="{{system.img}}" />
+  {{/iff}}
+  <h2 class="item-name">{{system.name}}</h2>
+  <div class="item-details">
+    {{{system.system.prettyDesc}}}
+    <div class="item-properties">
+      {{#each system.system.textProperties}}
+      <span class="tag">
+        <div class="ffg-sendtochat hover-tooltip" data-tooltip="<section class=&quot;chat-msg-tooltip content&quot;><section class=&quot;description&quot;>{{this.description}}</section></section>">
+          {{{this.name}}} {{this.rank}}
+        </div>
+      </span>
+      {{/each}}
+    </div>
+  </div>
+</div>

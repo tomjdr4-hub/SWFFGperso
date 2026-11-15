@@ -1,0 +1,18 @@
+.idea
+node_modules
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/tests/.auth/
+.env
+
+# Livres de règles (PDF) : jamais publiés
+documents de base/
+*.pdf
+
+# Fichiers de verrou LevelDB des compendiums
+packs/**/LOCK
+packs/**/LOG
+packs/**/LOG.old

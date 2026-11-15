@@ -1,0 +1,49 @@
+import { test, expect } from '../../support/fixtures';
+
+/**
+ * Every reader of a modifier must agree it happened - at every depth it can be placed.
+ */
+
+const DELTA = 2;
+const BASE = { actor: 'character', item: 'armour', equipped: true };
+
+/** The same item without the modifier under test, for the before-and-after comparison. */
+async function plain(world, consumers, label) {
+  return consumers.read(await world.build({ ...BASE, label: `${label}-plain` }), 'Soak');
+}
+
+test('D1: every reader sees a soak modifier written straight onto the item', async ({ world, consumers }) => {
+  const before = await plain(world, consumers, 'd1');
+  const after = await consumers.read(await world.build({
+    ...BASE,
+    label: 'd1',
+    attributes: [{ modtype: 'Stat', mod: 'Soak', value: DELTA }],
+  }), 'Soak');
+
+  expect({ before, after }).toBeCoherent(DELTA);
+});
+
+test('#2292 D2: every reader sees a soak modifier in a quality on the item', async ({ world, consumers }) => {
+  const before = await plain(world, consumers, 'd2');
+  const after = await consumers.read(await world.build({
+    ...BASE,
+    label: 'd2',
+    modifier: { name: 'qa soak quality', key: 'Soak', value: DELTA, active: true },
+  }), 'Soak');
+
+  expect({ before, after }).toBeCoherent(DELTA);
+});
+
+test('#2293 D3: every reader sees a soak modifier in a Modification inside an attachment', async ({ world, consumers }) => {
+  const before = await plain(world, consumers, 'd3');
+  const after = await consumers.read(await world.build({
+    ...BASE,
+    label: 'd3',
+    attachment: {
+      name: 'insert',
+      modifications: [{ name: 'qa soak quality', key: 'Soak', value: DELTA, installed: true }],
+    },
+  }), 'Soak');
+
+  expect({ before, after }).toBeCoherent(DELTA);
+});

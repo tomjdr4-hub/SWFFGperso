@@ -1,0 +1,158 @@
+[
+  {
+    "name": "aoe-talents",
+    "label": "Talents",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-talents",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-armes",
+    "label": "Armes",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-armes",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-armures",
+    "label": "Armures",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-armures",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-kits",
+    "label": "Kits d'armes et d'armures",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-kits",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-qualites",
+    "label": "Attributs d'armes",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-qualites",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-materiel",
+    "label": "Matériel",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-materiel",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-especes",
+    "label": "Espèces",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-especes",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-carrieres",
+    "label": "Carrières",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-carrieres",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-specialisations",
+    "label": "Spécialisations",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-specialisations",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-pouvoirs-force",
+    "label": "Pouvoirs de la Force",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-pouvoirs-force",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-critiques",
+    "label": "Blessures et dégâts critiques",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-critiques",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-vehicules",
+    "label": "Véhicules et vaisseaux",
+    "type": "Actor",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-vehicules",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "aoe-adversaires",
+    "label": "Adversaires",
+    "type": "Actor",
+    "system": "starwarsffg-v14",
+    "path": "packs/aoe-adversaires",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  }
+]
