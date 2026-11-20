@@ -9,6 +9,7 @@
 import { DicePoolFFG } from "../dice/pool.js";
 import DiceHelpers, { get_dice_pool } from "../helpers/dice-helpers.js";
 import * as R from "./space-combat-rules.js";
+import { GUIDE_HTML } from "./space-combat-guide.js";
 
 const SYS = "starwarsffg-v14";
 const SETTING = "spaceCombatState";
@@ -954,6 +955,7 @@ export class SpaceCombatApp extends ApplicationV2 {
     position: { width: 980, height: 760 },
     actions: {
       scTab: SpaceCombatApp.#onTab,
+      scJump: SpaceCombatApp.#onJump,
       addSelected: SpaceCombatApp.#onAddSelected,
       nextRound: SpaceCombatApp.#onNextRound,
       endEncounter: SpaceCombatApp.#onEndEncounter,
@@ -1016,13 +1018,16 @@ export class SpaceCombatApp extends ApplicationV2 {
   async _renderHTML(context) {
     const tabs = `<nav class="sc-tabs">
       <a data-action="scTab" data-tab="combat" class="${this.tab === "combat" ? "active" : ""}"><i class="fa-solid fa-jet-fighter"></i> Combat</a>
+      <a data-action="scTab" data-tab="guide" class="${this.tab === "guide" ? "active" : ""}"><i class="fa-solid fa-graduation-cap"></i> Déroulement</a>
       <a data-action="scTab" data-tab="help" class="${this.tab === "help" ? "active" : ""}"><i class="fa-solid fa-book"></i> Aide-mémoire</a>
     </nav>`;
+    if (this.tab === "guide") return tabs + `<div class="sc-body sc-help sc-guide">${dice(GUIDE_HTML)}</div>`;
     return tabs + (this.tab === "combat" ? this.#renderCombat(context) : this.#renderHelp());
   }
 
   _replaceHTML(result, content) {
-    const scroll = content.querySelector(".sc-body")?.scrollTop ?? 0;
+    const scroll = this._tabChanged ? 0 : (content.querySelector(".sc-body")?.scrollTop ?? 0);
+    this._tabChanged = false;
     content.innerHTML = result;
     const body = content.querySelector(".sc-body");
     if (body) body.scrollTop = scroll;
@@ -1056,7 +1061,7 @@ export class SpaceCombatApp extends ApplicationV2 {
     </header>`;
     const col = (title, side, list) => `<section class="sc-side sc-${side}" data-side="${side}">
       <h2>${title}</h2>
-      ${list.length ? list.map((s) => this.#renderShip(s, ctx)).join("") : `<p class="sc-empty">Sélectionnez des jetons de véhicules puis utilisez les boutons ci-dessus, ou glissez un véhicule ici.</p>`}
+      ${list.length ? list.map((s) => this.#renderShip(s, ctx)).join("") : `<p class="sc-empty">Sélectionnez des jetons de véhicules puis utilisez les boutons ci-dessus, ou glissez un véhicule ici.<br>Première fois ? Lisez l'onglet <a data-action="scTab" data-tab="guide">Déroulement</a>.</p>`}
     </section>`;
     return `${header}<div class="sc-body">${col("Alliés", "ally", ctx.allies)}${col("Ennemis", "enemy", ctx.enemies)}</div>`;
   }
@@ -1140,6 +1145,7 @@ export class SpaceCombatApp extends ApplicationV2 {
   }
 
   static #onTab(event, target) {
+    this._tabChanged = this.tab !== target.dataset.tab;
     this.tab = target.dataset.tab;
     this.render();
   }
@@ -1152,6 +1158,10 @@ export class SpaceCombatApp extends ApplicationV2 {
 
   static async #onNextRound() {
     await exec("nextRound");
+  }
+
+  static #onJump(event, target) {
+    this.element.querySelector(`#${target.dataset.target}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   static async #onEndEncounter() {

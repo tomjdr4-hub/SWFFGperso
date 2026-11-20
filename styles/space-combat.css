@@ -197,3 +197,30 @@
 .sc-card p { margin: 2px 0; }
 .sc-card .sc-buttons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .sc-card .sc-buttons button { flex: 1 1 auto; line-height: 24px; }
+
+/* Onglet Déroulement */
+#space-combat .sc-guide { line-height: 1.45; }
+#space-combat .sc-guide section { max-width: 860px; margin: 0 auto 18px; scroll-margin-top: 48px; }
+#space-combat .sc-guide h2 { border-bottom: 1px solid rgba(127, 127, 127, 0.5); margin-top: 6px; }
+#space-combat .sc-guide ol > li,
+#space-combat .sc-guide ul > li { margin-bottom: 4px; }
+#space-combat .sc-guide-toc {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 6px 4px;
+  margin-bottom: 8px;
+  background: var(--color-cool-5, rgba(20, 20, 20, 0.92));
+  border-bottom: 1px solid rgba(127, 127, 127, 0.5);
+  font-size: 0.9em;
+}
+#space-combat .sc-callout {
+  border-left: 4px solid #d9a521;
+  background: rgba(217, 165, 33, 0.12);
+  padding: 6px 10px;
+  border-radius: 0 6px 6px 0;
+  margin: 8px 0;
+}
