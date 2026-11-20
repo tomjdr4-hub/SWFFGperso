@@ -3,7 +3,7 @@
   "type": "system",
   "title": "Star Wars FFG (V14)",
   "description": "A system for playing Star Wars FFG games. Version portée pour Foundry V14.",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "compatibility": {
     "minimum": 14,
     "verified": "14.364",
@@ -31,6 +31,7 @@
   ],
   "styles": [
     "styles/starwarsffg-v14.css",
+    "styles/space-combat.css",
     "lib/pure/grids-min.css",
     "lib/slimselect/slimselect.css",
     "lib/datatables/datatables.min.css"
@@ -319,5 +320,5 @@
   "license": "LICENSE.txt",
   "url": "https://github.com/tomjdr4-hub/SWFFGperso",
   "manifest": "https://github.com/tomjdr4-hub/SWFFGperso/releases/latest/download/system.json",
-  "download": "https://github.com/tomjdr4-hub/SWFFGperso/releases/download/v2.0.5/system.zip"
+  "download": "https://github.com/tomjdr4-hub/SWFFGperso/releases/download/v2.0.6/system.zip"
 }

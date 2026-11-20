@@ -55,6 +55,7 @@ import {xpLogUndo} from "./helpers/actor-helpers.js";
 import {register_system_tours} from "./helpers/tours.js";
 import {ITEM_DATA_MODELS} from "./data/items/index.js";
 import {ACTOR_DATA_MODELS} from "./data/actors/index.js";
+import "./space-combat/space-combat.js";
 
 /* -------------------------------------------- */
 /*  Foundry VTT Initialization                  */
