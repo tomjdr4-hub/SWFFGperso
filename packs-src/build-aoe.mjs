@@ -114,10 +114,10 @@ function attrsFrom(parentKey, list = []) {
 }
 
 // ---------------------------------------------------------------- documents
-function item(pack, type, name, system, { img, effects = [], folder = null, flags = {} } = {}) {
+function item(pack, type, name, system, { img, effects = [], folder = null, flags = {}, src = null } = {}) {
   const key = `${pack}|${type}|${name}`;
   return {
-    _id: id(key), _key: key, name, type, img: img || "icons/svg/item-bag.svg",
+    _id: id(key), _key: key, _src: src, name, type, img: img || "icons/svg/item-bag.svg",
     system: { ...system, metadata: { tags: [type], sources: [SOURCE], ...(system.metadata || {}) } },
     effects, folder, sort: 0, ownership: { default: 0 },
     flags: { [SYS]: { ffgimportid: `aoe-${type}-${id(key).slice(0, 8)}` }, ...flags }, _stats: STATS,
@@ -167,7 +167,7 @@ const talentDocs = TALENTS.map((t) => {
     description: html(t.desc) + `<p><em>Arborescences : ${t.trees}</em></p>`, longDesc: "",
     activation: { value, label }, ranks: { ranked: !!t.ranked, current: 1, min: 0 },
     isForceTalent: !!t.force, isConflictTalent: !!t.conflict, attributes, ...srcMeta(t.src),
-  }, { img: "icons/svg/upgrade.svg", effects: attrEffects(key, attributes) });
+  }, { img: "icons/svg/upgrade.svg", effects: attrEffects(key, attributes), src: t.src });
 });
 const talentByName = (n) => {
   const norm = (s) => s.toLocaleLowerCase("fr").replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
@@ -175,7 +175,15 @@ const talentByName = (n) => {
   if (!t) throw new Error(`Talent introuvable : ${n}`);
   return t;
 };
-const uuid = (pack, doc, kind = "Item") => `Compendium.${SYS}.${pack}.${kind}.${doc._id}`;
+/**
+ * Les documents issus d'une extension sont rangés dans leurs propres compendiums (groupe « Force et Destinée »).
+ * Leur identifiant reste calculé à partir de la clé « aoe-… » : les liens existants ne changent pas.
+ */
+const EXT_PACKS = {
+  gdp: { "aoe-talents": "fed-talents", "aoe-especes": "fed-especes", "aoe-carrieres": "fed-carrieres", "aoe-specialisations": "fed-specialisations" },
+};
+const packOf = (pack, doc) => EXT_PACKS[doc?._src]?.[pack] ?? pack;
+const uuid = (pack, doc, kind = "Item") => `Compendium.${SYS}.${packOf(pack, doc)}.${kind}.${doc._id}`;
 
 // ---------------------------------------------------------------- armes / armures / kits / matériel
 const folderDocs = {};
@@ -233,7 +241,7 @@ const gearDocs = readAll("gear-").map((g) => {
 });
 
 // ---------------------------------------------------------------- espèces
-const speciesDocs = read("species.json").map((s) => {
+const speciesDocs = readAll("species").map((s) => {
   const key = `aoe-especes|species|${s.name}`;
   const attributes = {};
   for (const [c, v] of Object.entries(s.chars)) attributes[c] = { mod: c, modtype: "Characteristic", value: v, exclude: true };
@@ -255,8 +263,8 @@ const speciesDocs = read("species.json").map((s) => {
   for (const tn of s.talents) { const t = talentByName(tn); talents[t._id] = { name: t.name, source: uuid("aoe-talents", t), id: t._id }; }
   const abilities = {};
   s.abilities.forEach((a, i) => { abilities[id(`${key}|ab|${i}`)] = { name: a.name, type: "ability", system: { description: html(a.desc) } }; });
-  return item("aoe-especes", "species", s.name, { description: html(s.desc), attributes, talents, abilities, startingXP: s.xp },
-    { img: "icons/svg/mystery-man.svg", effects: [effect(key, "(inherent)", changes, { img: "icons/svg/mystery-man.svg" })] });
+  return item("aoe-especes", "species", s.name, { description: html(s.desc), attributes, talents, abilities, startingXP: s.xp, ...srcMeta(s.src) },
+    { img: "icons/svg/mystery-man.svg", effects: [effect(key, "(inherent)", changes, { img: "icons/svg/mystery-man.svg" })], src: s.src });
 });
 
 // ---------------------------------------------------------------- spécialisations / carrières
@@ -275,7 +283,7 @@ const specDocs = TREES.map((t) => {
       const entry = {
         name: tal.name, description: tal.system.description, activation: tal.system.activation.value, activationLabel: tal.system.activation.label,
         isForceTalent: tal.system.isForceTalent, isConflictTalent: false, isRanked: tal.system.ranks.ranked, size: "single",
-        canLinkTop: true, canLinkRight: true, itemId: tal._id, pack: `${SYS}.aoe-talents`, attributes, longDesc: "",
+        canLinkTop: true, canLinkRight: true, itemId: tal._id, pack: `${SYS}.${packOf("aoe-talents", tal)}`, attributes, longDesc: "",
       };
       if (t.up[r][c]) entry["links-top-1"] = true;
       if (c < 3 && t.right[r][c]) entry["links-right"] = true;
@@ -291,7 +299,7 @@ const specDocs = TREES.map((t) => {
   return item("aoe-specialisations", "specialization", t.spec, {
     description: desc, talents, careerSkills, universal: t.page === 288, isReadOnly: true, ...srcMeta(t.src),
     attributes: t.page === 288 ? attrsFrom(key, [{ mod: "ForcePool", modtype: "Stat", value: 1 }]) : {},
-  }, { img: "icons/svg/target.svg", folder: folder("aoe-specialisations", "Item", t.career), effects: [inherent, ...effects, ...(t.page === 288 ? attrEffects(key, attrsFrom(key, [{ mod: "ForcePool", modtype: "Stat", value: 1 }])) : [])] });
+  }, { img: "icons/svg/target.svg", src: t.src, folder: folder(packOf("aoe-specialisations", { _src: t.src }), "Item", t.career), effects: [inherent, ...effects, ...(t.page === 288 ? attrEffects(key, attrsFrom(key, [{ mod: "ForcePool", modtype: "Stat", value: 1 }])) : [])] });
 });
 
 const careerDocs = Object.entries(CAREERS.careers).map(([name, desc]) => {
@@ -303,7 +311,7 @@ const careerDocs = Object.entries(CAREERS.careers).map(([name, desc]) => {
   for (const t of trees) { const s = specDocs.find((d) => d.name === t.spec); specializations[s._id] = { name: s.name, source: uuid("aoe-specialisations", s), id: s._id }; }
   const inherent = effect(key, "(inherent)", Array.from({ length: 8 }, (_, i) => ({ key: skills[i] ? `system.skills.${skills[i]}.careerskill` : "(none)", value: true })), { img: "icons/svg/book.svg" });
   return item("aoe-carrieres", "career", name, { description: desc, careerSkills, specializations, signatureabilities: {}, attributes: {}, ...srcMeta(trees[0].src) },
-    { img: "icons/svg/book.svg", effects: [inherent] });
+    { img: "icons/svg/book.svg", effects: [inherent], src: trees[0].src });
 });
 
 // ---------------------------------------------------------------- pouvoirs de la Force
@@ -436,7 +444,7 @@ const vehicleDocs = readAll("vehicles-").map((v) => {
 });
 
 // ---------------------------------------------------------------- écriture LevelDB
-const PACKS = [
+const BASE_PACKS = [
   { name: "aoe-talents", label: "Talents", type: "Item", docs: talentDocs },
   { name: "aoe-armes", label: "Armes", type: "Item", docs: weaponDocs },
   { name: "aoe-armures", label: "Armures", type: "Item", docs: armourDocs },
@@ -451,6 +459,19 @@ const PACKS = [
   { name: "aoe-vehicules", label: "Véhicules et vaisseaux", type: "Actor", docs: vehicleDocs },
   { name: "aoe-adversaires", label: "Adversaires", type: "Actor", docs: advDocs },
 ];
+// Répartit chaque pack de base entre lui-même et le compendium de l'extension d'où viennent ses documents.
+const PACKS = [];
+for (const p of BASE_PACKS) {
+  PACKS.push({ ...p, docs: p.docs.filter((d) => packOf(p.name, d) === p.name) });
+}
+for (const p of BASE_PACKS) {
+  for (const ext of Object.values(EXT_PACKS)) {
+    const name = ext[p.name];
+    if (!name) continue;
+    const docs = p.docs.filter((d) => packOf(p.name, d) === name);
+    if (docs.length) PACKS.push({ ...p, name, docs });
+  }
+}
 
 async function writePack(p) {
   const dir = path.join(OUT, p.name);
@@ -465,7 +486,7 @@ async function writePack(p) {
   p.docs.forEach((d, idx) => {
     if (seen.has(d._id)) throw new Error(`Identifiant en double dans ${p.name} : ${d.name}`);
     seen.add(d._id);
-    const { _key, ...doc } = d;
+    const { _key, _src, ...doc } = d;
     doc.sort = (idx + 1) * 100;
     const effects = doc.effects || [];
     doc.effects = effects.map((e) => e._id);

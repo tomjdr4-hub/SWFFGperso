@@ -154,5 +154,53 @@
       "ASSISTANT": "OWNER"
     },
     "flags": {}
+  },
+  {
+    "name": "fed-talents",
+    "label": "Talents",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/fed-talents",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "fed-especes",
+    "label": "Espèces",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/fed-especes",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "fed-carrieres",
+    "label": "Carrières",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/fed-carrieres",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
+  },
+  {
+    "name": "fed-specialisations",
+    "label": "Spécialisations",
+    "type": "Item",
+    "system": "starwarsffg-v14",
+    "path": "packs/fed-specialisations",
+    "ownership": {
+      "PLAYER": "OBSERVER",
+      "ASSISTANT": "OWNER"
+    },
+    "flags": {}
   }
 ]

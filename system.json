@@ -3,7 +3,7 @@
   "type": "system",
   "title": "Star Wars FFG (V14)",
   "description": "A system for playing Star Wars FFG games. Version portée pour Foundry V14.",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "compatibility": {
     "minimum": 14,
     "verified": "14.364",
@@ -210,6 +210,54 @@
         "ASSISTANT": "OWNER"
       },
       "flags": {}
+    },
+    {
+      "name": "fed-especes",
+      "label": "Espèces",
+      "type": "Item",
+      "system": "starwarsffg-v14",
+      "path": "packs/fed-especes",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    },
+    {
+      "name": "fed-carrieres",
+      "label": "Carrières",
+      "type": "Item",
+      "system": "starwarsffg-v14",
+      "path": "packs/fed-carrieres",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    },
+    {
+      "name": "fed-specialisations",
+      "label": "Spécialisations",
+      "type": "Item",
+      "system": "starwarsffg-v14",
+      "path": "packs/fed-specialisations",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    },
+    {
+      "name": "fed-talents",
+      "label": "Talents",
+      "type": "Item",
+      "system": "starwarsffg-v14",
+      "path": "packs/fed-talents",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
     }
   ],
   "packFolders": [
@@ -231,6 +279,17 @@
         "aoe-critiques",
         "aoe-vehicules",
         "aoe-adversaires"
+      ]
+    },
+    {
+      "name": "Force et Destinée",
+      "sorting": "m",
+      "color": "#1c6b4a",
+      "packs": [
+        "fed-especes",
+        "fed-carrieres",
+        "fed-specialisations",
+        "fed-talents"
       ]
     },
     {
@@ -320,5 +379,5 @@
   "license": "LICENSE.txt",
   "url": "https://github.com/tomjdr4-hub/SWFFGperso",
   "manifest": "https://github.com/tomjdr4-hub/SWFFGperso/releases/latest/download/system.json",
-  "download": "https://github.com/tomjdr4-hub/SWFFGperso/releases/download/v2.0.6/system.zip"
+  "download": "https://github.com/tomjdr4-hub/SWFFGperso/releases/download/v2.0.7/system.zip"
 }
