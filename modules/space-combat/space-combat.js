@@ -10,7 +10,6 @@ import { DicePoolFFG } from "../dice/pool.js";
 import DiceHelpers, { get_dice_pool } from "../helpers/dice-helpers.js";
 import * as R from "./space-combat-rules.js";
 import { GUIDE_HTML } from "./space-combat-guide.js";
-import * as G from "./space-combat-radar.js";
 
 const SYS = "starwarsffg-v14";
 const SETTING = "spaceCombatState";
@@ -46,7 +45,7 @@ const diffLabel = (n) => `${R.DIFFICULTY_NAMES[Math.min(n, 5)] ?? n} (${diffDice
 const signed = (n) => (n > 0 ? `+${n}` : `${n}`);
 
 function emptyState() {
-  return { round: 1, ships: [], duels: {}, radar: { scale: 5, nose: "down" } };
+  return { round: 1, ships: [], duels: {} };
 }
 
 function getState() {
@@ -112,87 +111,18 @@ function weaponStats(w) {
     seen.add(k);
     return true;
   }).join(", ");
-  const arcKeys = Object.entries(sys.firingarc ?? {}).filter(([, v]) => v).map(([k]) => k);
-  const arcs = arcKeys.map((k) => R.ARCS[k] ?? k);
-  const rangeKey = sys.range?.adjusted || sys.range?.value || "";
+  const arcs = Object.entries(sys.firingarc ?? {}).filter(([, v]) => v).map(([k]) => R.ARCS[k] ?? k);
   return {
     id: w.id,
     name: w.name,
     damage: Number(sys.damage?.adjusted || sys.damage?.value || 0),
     crit: Number(sys.crit?.adjusted || sys.crit?.value || 0),
-    range: R.RANGES[rangeKey] ?? rangeKey,
-    rangeKey,
-    arcKeys,
+    range: R.RANGES[sys.range?.adjusted || sys.range?.value] ?? (sys.range?.value || ""),
     skill: sys.skill?.value || "Gunnery",
     arcs: arcs.length === 6 ? ["tous"] : arcs,
     special: quals.replace(/^[,\s]+|[,\s]+$/g, ""),
     q: R.parseQualities(quals),
   };
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Positions (radar)                                                         */
-/* -------------------------------------------------------------------------- */
-
-/** Jeton du vaisseau sur la scène affichée (jeton ajouté au tableau, ou premier jeton de l'acteur). */
-function shipToken(ship) {
-  if (!canvas?.ready || !canvas.scene) return null;
-  let doc = null;
-  try {
-    doc = fromUuidSync(ship.uuid, { strict: false });
-  } catch (e) {
-    doc = null;
-  }
-  if (doc?.documentName === "Token") return doc.parent === canvas.scene ? doc : null;
-  if (doc instanceof Actor) return canvas.scene.tokens.find((t) => t.actorId === doc.id) ?? null;
-  return null;
-}
-
-/** Vaisseaux placés sur la scène affichée, en cases, avec leur cap. */
-function placedShips(state) {
-  if (!canvas?.ready || !canvas.scene) return [];
-  const size = canvas.grid?.size || canvas.dimensions?.size || 100;
-  const out = [];
-  for (const s of state.ships) {
-    const t = shipToken(s);
-    const a = shipActor(s);
-    if (!t || !a) continue;
-    if (t.hidden && !game.user.isGM) continue;
-    // Position et rotation enregistrées (pas celles de l'animation en cours).
-    const src = t._source ?? t;
-    const cx = src.x + ((src.width || 1) * size) / 2;
-    const cy = src.y + ((src.height || 1) * size) / 2;
-    out.push({
-      key: s.key, name: a.name, side: s.side, sil: stats(a).sil,
-      x: cx / size, y: cy / size,
-      heading: G.headingFromRotation(src.rotation, state.radar?.nose),
-    });
-  }
-  return out;
-}
-
-const fmtCells = (d) => (Math.round(d * 10) / 10).toLocaleString("fr");
-
-/**
- * Ce que la position change pour une attaque : arc de tir, portée et zone exposée.
- * @returns {null|{notes:string[], exposed:string, outOfArc:boolean, outOfRange:boolean}}
- */
-function attackGeometry(state, attackerKey, targetKey, weapon) {
-  const placed = placedShips(state);
-  const a = placed.find((s) => s.key === attackerKey);
-  const t = placed.find((s) => s.key === targetKey);
-  if (!a || !t) return null;
-  const scale = state.radar?.scale || 5;
-  const rel = G.relation(a, t, scale);
-  const notes = [`Position : portée ${G.RANGE_NAMES[rel.band].toLowerCase()} (${fmtCells(rel.dist)} cases), cible dans l'arc ${G.ARC_LABELS[rel.arc]} du tireur, qui voit sa zone ${G.ARC_LABELS[rel.exposed]}`];
-  const cover = G.weaponCovers(weapon.arcKeys, rel.relAB);
-  const outOfArc = !cover.ok;
-  if (outOfArc) notes.push(`⚠ hors de l'arc de tir de l'arme (${weapon.arcs.join("/")})`);
-  if (cover.flat) notes.push("arme dorsale/ventrale : considérée comme couvrant tout l'horizon (pas de dessus/dessous sur le radar)");
-  const wIdx = G.RANGE_KEYS.indexOf(weapon.rangeKey);
-  const outOfRange = wIdx >= 0 && rel.band > wIdx;
-  if (outOfRange) notes.push(`⚠ hors de portée (portée de l'arme : ${weapon.range.toLowerCase()})`);
-  return { notes, exposed: rel.exposed, outOfArc, outOfRange };
 }
 
 function skillKey(skill, actor) {
@@ -276,12 +206,6 @@ const OPS = {
     const state = getState();
     const { ship } = findShip(state, key);
     ship.side = side;
-    await saveState(state);
-  },
-
-  async setRadar({ scale, nose }) {
-    const state = getState();
-    state.radar = { scale: Math.max(0.5, Number(scale) || 5), nose: G.NOSE[nose] ? nose : "down" };
     await saveState(state);
   },
 
@@ -785,15 +709,11 @@ async function attackDialog(state, key) {
     if (isActive(ship.effects.stick, state.round)) { upA++; notes.push("le tireur colle à sa cible : +1 amélioration d'aptitude"); }
     if (isActive(t.effects.stick, state.round)) { upA++; notes.push("la cible colle à quelqu'un : +1 amélioration d'aptitude"); }
     const zones = R.zonesFor(tst.sil);
-    const geo = attackGeometry(state, key, t.key, w);
-    if (geo) notes.push(...geo.notes);
     let zone = fd.zone && zones.includes(fd.zone) ? fd.zone : null;
     if (!zone) {
       const sorted = [...zones].sort((x, y) => tst.shields[x] - tst.shields[y]);
       // Gabarit ≤ 4 : la cible présente sa zone la mieux défendue, sauf si le tireur a pris l'avantage.
-      // Gabarit 5+ : la position du tireur décide (zone exposée sur le radar si les jetons sont placés).
-      if (tst.sil <= 4) zone = hasAdv ? sorted[0] : sorted.at(-1);
-      else zone = geo?.exposed ?? "fore";
+      zone = tst.sil <= 4 && !hasAdv ? sorted.at(-1) : (tst.sil <= 4 ? sorted[0] : "fore");
     }
     const def = tst.shields[zone] ?? 0;
     if (def) notes.push(`défense ${R.ZONES[zone]} ${def} : +${def} [SE]`);
@@ -801,7 +721,6 @@ async function attackDialog(state, key) {
     if (ship.fired.includes(w.id)) notes.push("⚠ cette arme a déjà tiré ce round (une seule fois par round)");
     notes.push(`Arme : dégâts ${w.damage}, critique ${w.crit}, portée ${w.range}, arc ${w.arcs.join("/") || "?"}${w.special ? `, ${w.special}` : ""}`);
     if (tst.sil <= 4) notes.push(hasAdv ? "avantage pris : le tireur choisit la zone" : "la cible présente sa zone la mieux défendue");
-    else notes.push(geo ? `gros vaisseau : la position du tireur désigne la zone ${R.ZONES[geo.exposed].toLowerCase()}` : "gros vaisseau : la zone dépend de la position du tireur (placez les jetons pour la calculer)");
     return { w, t, ta, difficulty, upD, upA, zone, zones, def, notes, hasAdv };
   };
 
@@ -1037,8 +956,6 @@ export class SpaceCombatApp extends ApplicationV2 {
     actions: {
       scTab: SpaceCombatApp.#onTab,
       scJump: SpaceCombatApp.#onJump,
-      radarFocus: SpaceCombatApp.#onRadarFocus,
-      radarToggle: SpaceCombatApp.#onRadarToggle,
       addSelected: SpaceCombatApp.#onAddSelected,
       nextRound: SpaceCombatApp.#onNextRound,
       endEncounter: SpaceCombatApp.#onEndEncounter,
@@ -1121,89 +1038,6 @@ export class SpaceCombatApp extends ApplicationV2 {
     const el = this.element;
     el.ondragover = (ev) => ev.preventDefault();
     el.ondrop = (ev) => this.#onDrop(ev);
-    for (const input of el.querySelectorAll(".sc-radar-controls [name]")) {
-      input.addEventListener("change", () => {
-        const scale = Number(el.querySelector(".sc-radar-controls [name=scale]")?.value) || 5;
-        const nose = el.querySelector(".sc-radar-controls [name=nose]")?.value || "down";
-        exec("setRadar", { scale: Math.max(0.5, scale), nose });
-      });
-    }
-  }
-
-  radarOpen = true;
-  radarFocus = null;
-
-  #renderRadar(ctx) {
-    const state = ctx.state;
-    const radar = state.radar ?? { scale: 5, nose: "down" };
-    const head = `<header class="sc-radar-head">
-      <a data-action="radarToggle"><i class="fa-solid fa-chevron-${this.radarOpen ? "down" : "right"}"></i> <strong>Positions</strong></a>
-      ${canvas?.scene ? `<span class="sc-radar-scene">scène « ${esc(canvas.scene.name)} »</span>` : ""}
-      ${ctx.isGM && this.radarOpen ? `<span class="sc-radar-controls">
-        <label data-tooltip="Distance couverte par chaque niveau de portée : proche jusqu'à N cases, courte jusqu'à 2N, moyenne 3N, longue 4N, au-delà extrême.">1 niveau de portée = <input type="number" name="scale" value="${radar.scale}" min="0.5" step="0.5"> cases</label>
-        <label data-tooltip="Vers où pointe le nez du vaisseau dans l'image du jeton quand sa rotation est 0.">Nez des jetons <select name="nose">${[["down", "vers le bas"], ["up", "vers le haut"], ["right", "vers la droite"], ["left", "vers la gauche"]].map(([v, l]) => `<option value="${v}" ${radar.nose === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
-      </span>` : ""}
-    </header>`;
-    if (!this.radarOpen) return `<section class="sc-radar collapsed">${head}</section>`;
-
-    const placed = placedShips(state);
-    const missing = state.ships.filter((s) => !placed.some((p) => p.key === s.key)).map((s) => shipActor(s)?.name).filter(Boolean);
-    if (!placed.length) {
-      // Les jetons sont peut-être sur une autre scène que celle affichée.
-      const elsewhere = new Set();
-      for (const s of state.ships) {
-        try {
-          const d = fromUuidSync(s.uuid, { strict: false });
-          if (d?.documentName === "Token" && d.parent && d.parent !== canvas?.scene) elsewhere.add(d.parent.name);
-        } catch (e) { /* jeton supprimé */ }
-      }
-      const where = elsewhere.size ? ` Les jetons de ce combat sont sur la scène ${[...elsewhere].map((n) => `« ${esc(n)} »`).join(", ")} : affichez-la.` : "";
-      return `<section class="sc-radar">${head}<p class="sc-empty">Placez les jetons des vaisseaux engagés sur la scène affichée : leur position et leur orientation (rotation du jeton, Maj + molette) apparaîtront ici.${where}</p></section>`;
-    }
-    if (!placed.some((p) => p.key === this.radarFocus)) {
-      this.radarFocus = (placed.find((p) => p.side !== "enemy") ?? placed[0]).key;
-    }
-    const focus = placed.find((p) => p.key === this.radarFocus);
-    const shields = {};
-    for (const p of placed) {
-      const ship = state.ships.find((s) => s.key === p.key);
-      const a = shipActor(ship);
-      shields[p.key] = a ? stats(a).shields : {};
-    }
-    const svg = G.radarSVG(placed, { focus: focus.key, scale: radar.scale, shields });
-
-    // Relations du vaisseau sélectionné avec chacun des autres
-    const focusActor = shipActor(state.ships.find((s) => s.key === focus.key));
-    const focusWeapons = focusActor ? focusActor.items.filter((i) => i.type === "shipweapon").map(weaponStats) : [];
-    const rows = placed.filter((p) => p.key !== focus.key).map((p) => {
-      const r = G.relation(focus, p, radar.scale);
-      const back = G.relation(p, focus, radar.scale);
-      const usable = focusWeapons.filter((w) => {
-        const cover = G.weaponCovers(w.arcKeys, r.relAB).ok;
-        const idx = G.RANGE_KEYS.indexOf(w.rangeKey);
-        return cover && (idx < 0 || r.band <= idx);
-      });
-      const tShip = state.ships.find((s) => s.key === p.key);
-      const tActor = shipActor(tShip);
-      const def = tActor ? stats(tActor).shields[r.exposed] : 0;
-      return `<li class="${p.side}">
-        <strong>${esc(p.name)}</strong> — portée <strong>${G.RANGE_NAMES[r.band].toLowerCase()}</strong> (${fmtCells(r.dist)} cases)
-        <br>dans l'arc <strong>${G.ARC_LABELS[r.arc]}</strong> de ${esc(focus.name)} · lui présente sa zone ${G.ARC_LABELS[r.exposed]} (défense ${def ?? 0})
-        <br>voit ${esc(focus.name)} dans son arc ${G.ARC_LABELS[back.arc]}
-        ${focusWeapons.length ? `<br><small>Armes qui peuvent le viser : ${usable.length ? usable.map((w) => esc(w.name)).join(", ") : "<em>aucune</em>"}</small>` : ""}
-      </li>`;
-    });
-    return `<section class="sc-radar">${head}
-      <div class="sc-radar-grid">
-        <div class="sc-radar-map">${svg}</div>
-        <div class="sc-radar-info">
-          <p>Centré sur <strong>${esc(focus.name)}</strong> <small>(cliquez un vaisseau sur le radar pour changer)</small>. Les anneaux sont les niveaux de portée, les secteurs ses zones de défense.</p>
-          ${rows.length ? `<ul>${rows.join("")}</ul>` : "<p>Aucun autre vaisseau placé.</p>"}
-          ${missing.length ? `<p class="sc-hint">Pas sur cette scène : ${missing.map(esc).join(", ")}.</p>` : ""}
-          <p class="sc-hint">Indicatif : les règles restent narratives. Pas de dessus/dessous sur le radar ; les armes dorsales/ventrales comptent comme couvrant tout l'horizon.</p>
-        </div>
-      </div>
-    </section>`;
   }
 
   async #onDrop(event) {
@@ -1229,8 +1063,7 @@ export class SpaceCombatApp extends ApplicationV2 {
       <h2>${title}</h2>
       ${list.length ? list.map((s) => this.#renderShip(s, ctx)).join("") : `<p class="sc-empty">Sélectionnez des jetons de véhicules puis utilisez les boutons ci-dessus, ou glissez un véhicule ici.<br>Première fois ? Lisez l'onglet <a data-action="scTab" data-tab="guide">Déroulement</a>.</p>`}
     </section>`;
-    const radar = ctx.state.ships.length ? this.#renderRadar(ctx) : "";
-    return `${header}<div class="sc-body">${col("Alliés", "ally", ctx.allies)}${col("Ennemis", "enemy", ctx.enemies)}${radar}</div>`;
+    return `${header}<div class="sc-body">${col("Alliés", "ally", ctx.allies)}${col("Ennemis", "enemy", ctx.enemies)}</div>`;
   }
 
   #renderShip(s, ctx) {
@@ -1327,16 +1160,6 @@ export class SpaceCombatApp extends ApplicationV2 {
     await exec("nextRound");
   }
 
-  static #onRadarFocus(event, target) {
-    this.radarFocus = target.dataset.key;
-    this.render();
-  }
-
-  static #onRadarToggle() {
-    this.radarOpen = !this.radarOpen;
-    this.render();
-  }
-
   static #onJump(event, target) {
     this.element.querySelector(`#${target.dataset.target}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1429,12 +1252,6 @@ Hooks.on("getSceneControlButtons", (controls) => {
 });
 
 Hooks.on("updateActor", (actor) => { if (involves(actor)) refreshSoon(); });
-// Le radar suit les déplacements, rotations et apparitions des jetons de la scène affichée.
-Hooks.on("updateToken", (token, changes) => {
-  if (token.parent === canvas?.scene && ["x", "y", "rotation", "hidden", "width", "height"].some((k) => k in changes)) refreshSoon();
-});
-for (const hook of ["createToken", "deleteToken"]) Hooks.on(hook, (token) => { if (token.parent === canvas?.scene) refreshSoon(); });
-Hooks.on("canvasReady", () => refreshSoon());
 for (const hook of ["createItem", "deleteItem", "updateItem"]) {
   Hooks.on(hook, (item) => { if (involves(item.parent)) refreshSoon(); });
 }
