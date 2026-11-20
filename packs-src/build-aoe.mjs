@@ -13,6 +13,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(ROOT, "packs-src", "aoe");
 const OUT = path.join(ROOT, "packs");
 const SOURCE = "Aux Confins de l'Empire - Livre de règles";
+const SOURCES = { gdp: "Force et Destinée - Les Garants de la paix" };
+const srcMeta = (src) => (src && SOURCES[src] ? { metadata: { sources: [SOURCES[src]] } } : {});
 const NOW = Date.now();
 const STATS = { coreVersion: "14.364", systemId: SYS, systemVersion: "2.0.4", createdTime: NOW, modifiedTime: NOW, lastModifiedBy: null, compendiumSource: null, duplicateSource: null, exportSource: null };
 
@@ -164,7 +166,7 @@ const talentDocs = TALENTS.map((t) => {
   return item("aoe-talents", "talent", t.name, {
     description: html(t.desc) + `<p><em>Arborescences : ${t.trees}</em></p>`, longDesc: "",
     activation: { value, label }, ranks: { ranked: !!t.ranked, current: 1, min: 0 },
-    isForceTalent: !!t.force, isConflictTalent: false, attributes,
+    isForceTalent: !!t.force, isConflictTalent: !!t.conflict, attributes, ...srcMeta(t.src),
   }, { img: "icons/svg/upgrade.svg", effects: attrEffects(key, attributes) });
 });
 const talentByName = (n) => {
@@ -258,7 +260,7 @@ const speciesDocs = read("species.json").map((s) => {
 });
 
 // ---------------------------------------------------------------- spécialisations / carrières
-const TREES = read("trees.json");
+const TREES = [...read("trees.json"), ...read("trees-gdp.json")];
 const CAREERS = read("careers.json");
 const titleCase = (s) => s.toLocaleLowerCase("fr").replace(/^./, (c) => c.toLocaleUpperCase("fr"));
 const specDocs = TREES.map((t) => {
@@ -287,7 +289,7 @@ const specDocs = TREES.map((t) => {
   let desc = CAREERS.specs[t.spec] || "";
   if (t.page === 288) desc = "<p><strong>Arborescence universelle.</strong> Gagnez une Valeur de Force de 1. Cette spécialité n'est liée à aucune carrière et n'apporte aucune compétence de carrière supplémentaire.</p>";
   return item("aoe-specialisations", "specialization", t.spec, {
-    description: desc, talents, careerSkills, universal: t.page === 288, isReadOnly: true,
+    description: desc, talents, careerSkills, universal: t.page === 288, isReadOnly: true, ...srcMeta(t.src),
     attributes: t.page === 288 ? attrsFrom(key, [{ mod: "ForcePool", modtype: "Stat", value: 1 }]) : {},
   }, { img: "icons/svg/target.svg", folder: folder("aoe-specialisations", "Item", t.career), effects: [inherent, ...effects, ...(t.page === 288 ? attrEffects(key, attrsFrom(key, [{ mod: "ForcePool", modtype: "Stat", value: 1 }])) : [])] });
 });
@@ -300,7 +302,7 @@ const careerDocs = Object.entries(CAREERS.careers).map(([name, desc]) => {
   const specializations = {};
   for (const t of trees) { const s = specDocs.find((d) => d.name === t.spec); specializations[s._id] = { name: s.name, source: uuid("aoe-specialisations", s), id: s._id }; }
   const inherent = effect(key, "(inherent)", Array.from({ length: 8 }, (_, i) => ({ key: skills[i] ? `system.skills.${skills[i]}.careerskill` : "(none)", value: true })), { img: "icons/svg/book.svg" });
-  return item("aoe-carrieres", "career", name, { description: desc, careerSkills, specializations, signatureabilities: {}, attributes: {} },
+  return item("aoe-carrieres", "career", name, { description: desc, careerSkills, specializations, signatureabilities: {}, attributes: {}, ...srcMeta(trees[0].src) },
     { img: "icons/svg/book.svg", effects: [inherent] });
 });
 
