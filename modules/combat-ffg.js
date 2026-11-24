@@ -660,9 +660,8 @@ export class CombatFFG extends Combat {
       game.socket.emit("system.starwarsffg-v14", {event: "combat", data: data});
       return;
     }
-    const claims = {
-      ...this.getFlag('starwarsffg-v14', 'combatClaims')
-    };
+    // copie profonde : modifier l'objet du drapeau en place ferait croire à Foundry que rien n'a changé
+    const claims = foundry.utils.deepClone(this.getFlag('starwarsffg-v14', 'combatClaims') ?? {});
     if (!claims[round]) {
       claims[round] = {};
     }
@@ -849,21 +848,17 @@ export class CombatFFG extends Combat {
         const hidden = this._getTokenHidden(claimant.tokenId);
         let defeated = claimant.isDefeated;
 
+        // V14 : les jetons n'ont plus de liste « effects » ni « overlayEffect » ; les icônes d'état viennent
+        // des effets temporaires de l'acteur, dont l'image s'appelle « img » (et non plus « icon »).
         const effects = new Set();
-        if (claimant.token) {
-          claimant.token.effects.forEach((e) => effects.add(e))
-          if (claimant.token.overlayEffect) {
-            effects.add(claimant.token.overlayEffect);
-          }
-        }
-
         if (claimant.actor) {
           if (claimant.isDefeated) {
             defeated = true;
           }
           for (const effect of claimant.actor.temporaryEffects) {
-            if (effect?.icon) {
-              effects.add(effect.icon);
+            const img = effect?.img ?? effect?.icon;
+            if (img) {
+              effects.add(img);
             }
           }
         }
