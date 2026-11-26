@@ -196,9 +196,21 @@ export const COMPONENTS_LARGE = [
   ["Passerelle", "Aucune manœuvre ni action de vaisseau possible ; il garde sa vitesse et son cap jusqu'à réparation."],
 ];
 
+/** Niveaux de portée, du plus proche au plus lointain (clés du système). */
+export const RANGE_ORDER = ["Close", "Short", "Medium", "Long", "Extreme"];
+
+/**
+ * Réserve d'un groupe de sbires (escadrille, batterie) : rangs de compétence = taille du groupe − 1,
+ * avec une caractéristique supposée de 2 quand aucun personnage n'est choisi.
+ */
+export function minionPool(size, characteristic = 2) {
+  const ranks = Math.max(0, size - 1);
+  return { ability: Math.max(characteristic, ranks) - Math.min(characteristic, ranks), proficiency: Math.min(characteristic, ranks) };
+}
+
 /**
  * Lit les attributs utiles au combat dans le champ « special » d'une arme de vaisseau (FR ou EN).
- * @returns {{accurate:number, breach:number, ion:boolean, linked:number, guided:number, slowFiring:number, limitedAmmo:number, blast:number, tractor:number}}
+ * @returns {{accurate:number, breach:number, ion:boolean, linked:number, guided:number, slowFiring:number, limitedAmmo:number, blast:number, tractor:number, autofire:boolean}}
  */
 export function parseQualities(text) {
   const t = String(text ?? "");
@@ -216,6 +228,7 @@ export function parseQualities(text) {
     limitedAmmo: num(/(?:munitions\s+limit[ée]es|limited\s+ammo)\s*(\d+)?/i),
     blast: num(/(?:souffle|blast)\s*(\d+)?/i),
     tractor: num(/(?:tracteur|tractor)\s*(\d+)?/i),
+    autofire: /automatique|auto-?fire/i.test(t),
   };
 }
 

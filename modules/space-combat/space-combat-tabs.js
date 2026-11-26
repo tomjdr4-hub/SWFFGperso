@@ -76,8 +76,11 @@ export function pilotHTML() {
   <section id="scp-outil">
     <h2>Dans l'outil</h2>
     <ul>
-      <li>Les boutons de manœuvre de la carte du vaisseau appliquent les règles : boutons grisés si le gabarit ou la vitesse ne permet pas la manœuvre, confirmation et +2 stress pour la 2ᵉ manœuvre, pastilles jaunes pour les manœuvres déjà faites ce round.</li>
-      <li>« Prendre l'avantage » et « Terrain » ouvrent le jet de Pilotage avec la difficulté et la maniabilité déjà comptées.</li>
+      <li>Les boutons de manœuvre de la carte du vaisseau appliquent les règles : boutons grisés avec la raison écrite dessous (gabarit, vitesse, limite atteinte, vaisseau dévié ou culbuté, moteur à l'arrêt, rayon tracteur), pastilles jaunes pour les manœuvres déjà faites ce round.</li>
+      <li>La 2ᵉ manœuvre se paie au choix en 2 stress mécanique ou en sacrifiant l'action du pilote (le stress n'est plus possible avec le critique « Fluctuations énergétiques »).</li>
+      <li>« Annuler » défait la dernière manœuvre du round (vitesse, stress, effets, distance).</li>
+      <li>« Voler » demande par rapport à quel vaisseau et la nouvelle distance, qui est mémorisée pour les tirs.</li>
+      <li>« Prendre l'avantage », « Terrain », « Reprendre le contrôle » (critique « Dévié ») et « Se libérer du rayon » ouvrent le jet de Pilotage avec la difficulté et la maniabilité déjà comptées.</li>
       <li>Ces boutons ne s'affichent que pour le joueur dont le personnage a le poste de pilote à bord.</li>
     </ul>
   </section>`;
@@ -180,9 +183,11 @@ export function gunnerHTML() {
   <section id="sca-outil">
     <h2>Dans l'outil</h2>
     <ul>
-      <li>« Attaquer » ouvre un résumé : difficulté par les gabarits, défense de la zone, évasion, Coller à la cible, avantage, Précis. La fenêtre de jet s'ouvre ensuite avec la réserve prête.</li>
-      <li>Après le jet, une carte de chat donne le calcul (dégâts + succès − blindage, Brèche, Ionique) et indique si un critique est déclenché. Le MJ applique les dégâts et lance le critique.</li>
-      <li>Les armes qui ont déjà tiré ce round sont signalées sur la carte du vaisseau.</li>
+      <li>« Viser » (manœuvre) donne +1 [BO], ou +2 [BO] avec deux manœuvres, à la prochaine attaque de ce personnage ce round.</li>
+      <li>« Attaquer » ouvre un résumé : difficulté par les gabarits, défense de la zone, évasion, Coller à la cible, avantage, Précis, visée, vaisseau culbuté, rafale. On y indique aussi la portée de la cible et l'arc où elle se trouve : l'outil prévient si l'arme ne porte pas ou ne couvre pas cet arc.</li>
+      <li>Les armes à Cadence lente attendent leurs rounds ; les Munitions limitées se décomptent (le MJ réapprovisionne depuis la carte du vaisseau).</li>
+      <li>Après le jet, une carte de chat donne le calcul (dégâts + succès − blindage, Brèche, Ionique), un bouton par coup supplémentaire possible (Jumelé, rafale), le jet de critique, la relance d'un projectile guidé raté ou l'immobilisation par un rayon tracteur. Le MJ applique.</li>
+      <li>Sur un gros vaisseau, le MJ peut faire tirer une batterie d'armes identiques en une seule attaque (règle des sbires).</li>
       <li>Ce bouton ne s'affiche que pour le joueur dont le personnage a un poste d'artilleur à bord.</li>
     </ul>
   </section>`;

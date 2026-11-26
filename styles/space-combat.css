@@ -225,3 +225,82 @@
   border-radius: 0 6px 6px 0;
   margin: 8px 0;
 }
+
+/* --- Accessibilité et nouveaux éléments (audit) --- */
+#space-combat .sc-tabs .sc-tab,
+#space-combat .sc-subtabs .sc-tab {
+  width: auto;
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  padding: 4px 12px;
+  font-size: 1em;
+  opacity: 0.75;
+  line-height: 24px;
+}
+#space-combat .sc-tab.active { opacity: 1; font-weight: bold; background: rgba(127, 127, 127, 0.18); }
+#space-combat .sc-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px 10px 0;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.4);
+  flex: 0 0 auto;
+  font-size: 0.92em;
+}
+#space-combat button:focus-visible,
+#space-combat select:focus-visible,
+#space-combat input:focus-visible { outline: 2px solid #f2c94c; outline-offset: 1px; }
+#space-combat .sc-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: auto;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  cursor: pointer;
+  line-height: inherit;
+}
+#space-combat .sc-title h3 .sc-link { text-decoration: none; font-size: 1em; font-weight: bold; }
+#space-combat .sc-mini {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  line-height: 20px;
+  text-align: center;
+}
+#space-combat .sc-mini:hover { border-color: rgba(127, 127, 127, 0.6); }
+#space-combat .sc-side-badge {
+  font-size: 0.7em;
+  font-weight: normal;
+  padding: 0 6px;
+  border-radius: 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+#space-combat .sc-side-badge.ally { background: rgba(59, 130, 196, 0.25); border: 1px solid #3b82c4; }
+#space-combat .sc-side-badge.enemy { background: rgba(196, 69, 59, 0.25); border: 1px dashed #c4453b; }
+#space-combat .sc-ship.enemy { border-left-style: dashed; }
+#space-combat .sc-why { font-size: 0.82em; opacity: 0.85; margin: 2px 0 4px; font-style: italic; }
+#space-combat .sc-effects { list-style: none; padding: 0; margin: 4px 0; display: flex; flex-direction: column; gap: 3px; }
+#space-combat .sc-chip { display: block; border-radius: 6px; padding: 2px 8px; }
+#space-combat .sc-chip.warn { background: rgba(196, 69, 59, 0.18); border-color: rgba(196, 69, 59, 0.7); }
+#space-combat .sc-chip-hint { font-size: 0.85em; opacity: 0.85; }
+#space-combat .sc-crewline,
+#space-combat .sc-ranges,
+#space-combat .sc-squad { font-size: 0.88em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+#space-combat .sc-crew-chip { padding: 0 6px; border-radius: 8px; background: rgba(127, 127, 127, 0.15); }
+#space-combat .sc-crew-chip.mine { outline: 1px solid #f2c94c; }
+#space-combat .sc-range select { width: auto; height: 22px; font-size: 0.95em; }
+#space-combat .sc-ammo { font-size: 0.9em; padding: 0 4px; border-radius: 4px; background: rgba(127, 127, 127, 0.15); }
+#space-combat .sc-warn,
+.sc-dialog .sc-warn { color: #e07a5f; }
+#space-combat .sc-turn { color: #d9a521; }
+.sc-card .sc-applied { border-left: 3px solid #d9a521; padding-left: 6px; }
+.sc-dialog [hidden] { display: none !important; }
