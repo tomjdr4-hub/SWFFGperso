@@ -85,7 +85,7 @@ export const GUIDE_HTML = `
     <li><strong>Ajouter les modificateurs.</strong> La <strong>défense</strong> de la zone visée ajoute autant de [SE]. Un petit vaisseau (gabarit 4 ou moins) présente toujours sa zone la mieux défendue, sauf si le tireur a pris l'avantage ; contre un gros vaisseau, c'est la position du tireur qui décide. Puis l'évasion et Coller à la cible (des deux côtés), l'attribut Précis, etc.</li>
     <li><strong>Lancer.</strong> Au moins autant de [SU] que de [FA] : touché. Dégâts = dégâts de l'arme <strong>+ 1 par succès</strong>.</li>
     <li><strong>Retirer le blindage.</strong> Dégâts − blindage de la cible (moins l'attribut Brèche) = <strong>dégâts de coque</strong>. Une arme <em>Ionique</em> inflige du <strong>stress mécanique</strong> à la place.</li>
-    <li><strong>Dépenser les symboles.</strong> Si l'attaque a percé le blindage, on peut déclencher un <strong>dégât critique</strong> en dépensant autant de [AD] que la valeur de Critique de l'arme, ou un [TR]. Les autres [AD], [TR], [TH] et [DE] se dépensent avec les tables 7-5 et 7-6 (voir l'Aide-mémoire) : donner [BO] à un allié, manœuvre gratuite, endommager un composant… ou, côté menaces, perdre de la vitesse, subir du stress, collision.</li>
+    <li><strong>Dépenser les symboles.</strong> Si l'attaque a percé le blindage, on peut déclencher un <strong>dégât critique</strong> en dépensant autant de [AD] que la valeur de Critique de l'arme, ou un [TR]. Les autres [AD], [TR], [TH] et [DE] se dépensent avec les tables 7-5 et 7-6 (voir l'onglet Avantages / Menaces) : donner [BO] à un allié, manœuvre gratuite, endommager un composant… ou, côté menaces, perdre de la vitesse, subir du stress, collision.</li>
   </ol>
   <div class="sc-callout"><strong>Pourquoi les petites armes ne font rien aux gros vaisseaux :</strong> un critique n'est possible que si les dégâts dépassent le blindage. Contre un blindage de 6, des canons de dégâts 5 ne feront jamais de critique sans beaucoup de succès.</div>
 </section>
@@ -103,7 +103,7 @@ export const GUIDE_HTML = `
 
 <section id="scg-equipage">
   <h2>8. Que font les autres membres d'équipage ?</h2>
-  <p>Ceux qui ne pilotent ni ne tirent ont des actions utiles (table 7-7, détaillée dans l'Aide-mémoire) :</p>
+  <p>Ceux qui ne pilotent ni ne tirent ont des actions utiles (table 7-7, détaillée dans l'onglet Autres postes) :</p>
   <ul>
     <li><strong>Copilote</strong> : <em>Assister le pilotage</em> (Pilotage Moyen) pour faciliter le prochain test du pilote.</li>
     <li><strong>Mécanicien</strong> : <em>Contrôle des dégâts</em>, <em>Intensifier le bouclier</em> (+1 défense sur une zone contre 1 stress mécanique), <em>Réparations manuelles</em>.</li>
@@ -134,7 +134,7 @@ export const GUIDE_HTML = `
     <li><strong>Quand un pilote joue</strong> : cliquez sa manœuvre sur la carte du vaisseau. Les boutons impossibles (gabarit, vitesse, limite atteinte) sont grisés ; la 2ᵉ manœuvre et « Mettre la gomme » demandent confirmation et ajoutent le stress mécanique. Les pastilles jaunes montrent les manœuvres déjà faites ce round. « Prendre l'avantage » et « Terrain » ouvrent le jet de Pilotage avec la bonne difficulté et la maniabilité.</li>
     <li><strong>Quand un artilleur tire</strong> : « Attaquer », choisissez le tireur, l'arme et la cible. Le résumé indique la difficulté et tout ce qui la modifie ; la fenêtre de jet habituelle s'ouvre avec la réserve prête. Après le jet, une carte dans le chat donne le calcul des dégâts avec les boutons <em>Appliquer</em> et <em>Jet de critique</em>.</li>
     <li><strong>Les autres postes</strong> : « Contrôle des dégâts », « Action d'équipage » (toute la table 7-7), « Réorienter ».</li>
-    <li><strong>Les symboles</strong> : l'onglet <em>Aide-mémoire</em> liste ce qu'on peut acheter avec [AD], [TR], [TH] et [DE]. Appliquez les effets à la main (boutons − / + de vitesse, coque, stress ; bouton « Critique » ; « Collision »).</li>
+    <li><strong>Les symboles</strong> : l'onglet <em>Avantages / Menaces</em> liste ce qu'on peut acheter avec [AD], [TR], [TH] et [DE]. Appliquez les effets à la main (boutons − / + de vitesse, coque, stress ; bouton « Critique » ; « Collision »).</li>
     <li><strong>Fin du round</strong> : « Nouveau round » remet les compteurs à zéro et fait expirer les effets.</li>
     <li><strong>Fin du combat</strong> : « Fin de la rencontre » restaure les boucliers réorientés et efface les effets temporaires ; les dégâts et le stress restent sur les fiches.</li>
   </ol>

@@ -10,6 +10,7 @@ import { DicePoolFFG } from "../dice/pool.js";
 import DiceHelpers, { get_dice_pool } from "../helpers/dice-helpers.js";
 import * as R from "./space-combat-rules.js";
 import { GUIDE_HTML } from "./space-combat-guide.js";
+import * as T from "./space-combat-tabs.js";
 
 const SYS = "starwarsffg-v14";
 const SETTING = "spaceCombatState";
@@ -616,7 +617,7 @@ async function onRollResult(p, r) {
   const threat = Number(r.threat ?? 0);
   const ok = success > 0;
   const symbols = `${success} [SU] · ${adv} [AD] · ${threat} [TH]${tri ? ` · ${tri} [TR]` : ""}${des ? ` · ${des} [DE]` : ""}`;
-  const spendHint = (adv || tri || threat || des) ? `<p class="sc-hint">Avantages et menaces : voir l'onglet <em>Aide-mémoire</em> du tableau (tables 7-5 et 7-6).</p>` : "";
+  const spendHint = (adv || tri || threat || des) ? `<p class="sc-hint">Avantages et menaces : voir l'onglet <em>Avantages / Menaces</em> du tableau (tables 7-5 et 7-6).</p>` : "";
 
   switch (p.type) {
     case "attack": {
@@ -1080,10 +1081,22 @@ export class SpaceCombatApp extends ApplicationV2 {
     const tabs = `<nav class="sc-tabs">
       <a data-action="scTab" data-tab="combat" class="${this.tab === "combat" ? "active" : ""}"><i class="fa-solid fa-jet-fighter"></i> Combat</a>
       <a data-action="scTab" data-tab="guide" class="${this.tab === "guide" ? "active" : ""}"><i class="fa-solid fa-graduation-cap"></i> Déroulement</a>
+      <a data-action="scTab" data-tab="pilot" class="${this.tab === "pilot" ? "active" : ""}"><i class="fa-solid fa-gamepad"></i> Pilote</a>
+      <a data-action="scTab" data-tab="gunner" class="${this.tab === "gunner" ? "active" : ""}"><i class="fa-solid fa-crosshairs"></i> Artilleur</a>
+      <a data-action="scTab" data-tab="crew" class="${this.tab === "crew" ? "active" : ""}"><i class="fa-solid fa-users"></i> Autres postes</a>
+      <a data-action="scTab" data-tab="symbols" class="${this.tab === "symbols" ? "active" : ""}"><i class="fa-solid fa-scale-balanced"></i> Avantages / Menaces</a>
       <a data-action="scTab" data-tab="help" class="${this.tab === "help" ? "active" : ""}"><i class="fa-solid fa-book"></i> Aide-mémoire</a>
     </nav>`;
-    if (this.tab === "guide") return tabs + `<div class="sc-body sc-help sc-guide">${dice(GUIDE_HTML)}</div>`;
-    return tabs + (this.tab === "combat" ? this.#renderCombat(context) : this.#renderHelp());
+    const page = (html) => tabs + `<div class="sc-body sc-help sc-guide">${dice(html)}</div>`;
+    switch (this.tab) {
+      case "guide": return page(GUIDE_HTML);
+      case "pilot": return page(T.pilotHTML());
+      case "gunner": return page(T.gunnerHTML());
+      case "crew": return page(T.crewHTML(skillLabel));
+      case "symbols": return page(T.symbolsHTML());
+      case "help": return tabs + this.#renderHelp();
+      default: return tabs + this.#renderCombat(context);
+    }
   }
 
   _replaceHTML(result, content) {
@@ -1187,11 +1200,19 @@ export class SpaceCombatApp extends ApplicationV2 {
   }
 
   #renderHelp() {
-    const table = (title, rows) => `<h3>${dice(title)}</h3><table class="sc-table"><tbody>${rows.map((r) => `<tr><th>${dice(r.cost)}</th><td><ul>${r.options.map((o) => `<li>${dice(esc(o))}</li>`).join("")}</ul></td></tr>`).join("")}</tbody></table>`;
-    const crew = `<h3>Actions d'équipage (table 7-7)</h3><table class="sc-table"><tbody>${R.CREW_ACTIONS.map((a) => `<tr><th>${esc(a.label)}</th><td><em>${a.skill === "Piloting" ? "Pilotage" : skillLabel(a.skill)} ${diffLabel(a.difficulty)}${a.alt ? ` ou ${skillLabel(a.alt.skill)} ${diffLabel(a.alt.difficulty)}` : ""}</em><br>${a.result}</td></tr>`).join("")}</tbody></table>`;
-    const maneuvers = `<h3>Manœuvres de pilote</h3><table class="sc-table"><tbody>${Object.values(R.MANEUVERS).map((m) => `<tr><th>${m.label}</th><td>${m.hint}<br><small>Gabarit ${m.maxSil < 10 ? `1-${m.maxSil}` : "tous"} · vitesse ${m.minSpeed ? `${m.minSpeed}+` : "toutes"}</small></td></tr>`).join("")}
-      <tr><th>Réorienter les boucliers</th><td>Manœuvre (pas de pilote), tous gabarits : 1 point de défense passe d'une zone à une autre.</td></tr></tbody></table>
-      <p>Gabarit 1-4 : 1 manœuvre de pilote par round, 2 en subissant 2 stress mécanique. Gabarit 5+ : 1 seule. Chaque arme ne tire qu'une fois par round.</p>`;
+    const intro = `<p class="sc-hint">Résumé des chiffres à avoir sous la main. Le détail est dans les onglets Pilote, Artilleur, Autres postes et Avantages / Menaces.</p>`;
+    const damage = `<h3>Dégâts</h3><table class="sc-table"><tbody>
+      <tr><th>Échelle</th><td>1 point de dégâts, de blindage ou de coque d'un vaisseau = 10 à l'échelle d'un personnage.</td></tr>
+      <tr><th>Coque</th><td>Dégâts + [SU] − blindage. Au-delà du seuil : gabarit 3 ou moins détruit ; plus gros (ou vaisseau des PJ) : dégât critique et dérive. Réparation d'urgence (Mécanique Difficile) : coque = seuil − 1, vitesse 1, maniabilité −3, armes hors service, +30 aux critiques suivants.</td></tr>
+      <tr><th>Stress mécanique</th><td>Au-delà du seuil, systèmes hors service. Ne se retire pas avec des [AD] ; −1 par jour sans incident.</td></tr>
+      <tr><th>Critique</th><td>1d100 sur la table 7-9, +10 par critique non réparé et par critique supplémentaire acheté. Gravité : 1-54 Facile, 55-81 Moyenne, 82-126 Difficile, 127-153 Intimidante, 154+ désintégré.</td></tr>
+      <tr><th>Collision</th><td>Critique − 10 × défense de la zone (mineure) ou − 5 × défense (majeure) ; annulé si le total est 0 ou moins.</td></tr>
+      </tbody></table>`;
+    const limits = `<h3>Limites par round</h3><table class="sc-table"><tbody>
+      <tr><th>Manœuvres de pilote</th><td>Gabarit 1-4 : 1 par vaisseau, 2 en subissant 2 stress mécanique. Gabarit 5+ : 1 seule.</td></tr>
+      <tr><th>Armes</th><td>Chaque arme ne tire qu'une fois par round.</td></tr>
+      <tr><th>Personnage</th><td>1 action et 1 manœuvre ; jamais plus de 2 manœuvres.</td></tr>
+      </tbody></table>`;
     const diffs = `<h3>Difficultés</h3><table class="sc-table"><tbody>
       <tr><th>Attaque (table 7-4)</th><td>Écart de gabarit ≤ 1 : Moyenne · tireur plus petit de 2+ : Facile · plus grand de 2 : Difficile · de 3 : Intimidante · de 4+ : Exceptionnelle. Défense de la zone = [SE].</td></tr>
       <tr><th>Prendre l'avantage (7-3)</th><td>Même vitesse : Moyenne · plus rapide : Facile · plus lent de 1 : Difficile · de 2+ : Intimidante. +1 [DI] à chaque reprise dans le même duel.</td></tr>
@@ -1200,7 +1221,7 @@ export class SpaceCombatApp extends ApplicationV2 {
       </tbody></table>`;
     const comps = `<h3>Composants (tables 7-10 / 7-11)</h3><div class="sc-cols"><table class="sc-table"><caption>Gabarit 1-4</caption><tbody>${R.COMPONENTS_SMALL.map(([n, d]) => `<tr><th>${n}</th><td>${d}</td></tr>`).join("")}</tbody></table>
       <table class="sc-table"><caption>Gabarit 5+</caption><tbody>${R.COMPONENTS_LARGE.map(([n, d]) => `<tr><th>${n}</th><td>${d}</td></tr>`).join("")}</tbody></table></div>`;
-    return `<div class="sc-body sc-help">${dice(maneuvers)}${dice(diffs)}${table("Dépenser [AD] et [TR] (table 7-5)", R.SPEND_ADVANTAGE)}${table("Dépenser [TH] et [DE] (table 7-6)", R.SPEND_THREAT)}${dice(crew)}${comps}</div>`;
+    return `<div class="sc-body sc-help">${intro}${dice(diffs)}${dice(limits)}${dice(damage)}${comps}</div>`;
   }
 
   static #onTab(event, target) {
