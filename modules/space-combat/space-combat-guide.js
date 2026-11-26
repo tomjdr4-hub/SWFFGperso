@@ -139,5 +139,6 @@ export const GUIDE_HTML = `
     <li><strong>Fin du combat</strong> : « Fin de la rencontre » restaure les boucliers réorientés et efface les effets temporaires ; les dégâts et le stress restent sur les fiches.</li>
   </ol>
   <div class="sc-callout">Les cartes de chat et les jauges restent modifiables : en cas de désaccord ou de règle maison, le MJ corrige avec les boutons − / + et le jeu continue.</div>
+  <div class="sc-callout"><strong>Ce que voient les joueurs :</strong> chacun ne lance que pour ses propres personnages, selon leur poste dans l'équipage du vaisseau (glissez les personnages sur la fiche du vaisseau pour leur donner un poste). Le pilote a les manœuvres, « Prendre l'avantage » et « Terrain » ; l'artilleur a « Attaquer » ; tout membre d'équipage peut faire le contrôle des dégâts, une action d'équipage ou réorienter les boucliers. Les jauges, les critiques, les collisions et les boutons « Appliquer » du chat sont réservés au MJ. Sans équipage enregistré, le joueur qui possède le vaisseau garde tous les boutons.</div>
 </section>
 `;

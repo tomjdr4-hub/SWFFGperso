@@ -488,39 +488,90 @@ function onSocket(data) {
 /** Jet en attente : son résultat (prochain message de jet de cet utilisateur) déclenche la suite. */
 let pending = null;
 
-function crewChoices(actor, preferRole) {
-  const crew = actor.getFlag(SYS, "crew") ?? [];
-  const roles = game.settings.get(SYS, "arrayCrewRoles") ?? [];
+/** Ce qu'un nom de poste d'équipage permet de faire. */
+function roleKinds(roleName) {
+  const def = (game.settings.get(SYS, "arrayCrewRoles") ?? []).find((x) => x.role_name === roleName);
+  return {
+    pilot: /pilot/i.test(roleName),
+    gunner: !!def?.use_weapons || /gunner|artill|canon/i.test(roleName),
+    engineer: def?.role_skill === "Mechanics" || /engineer|ing[ée]n|m[ée]can/i.test(roleName),
+  };
+}
+
+/** Équipage enregistré sur la fiche du vaisseau, regroupé par personnage. */
+function shipCrew(actor) {
   const byActor = new Map();
-  for (const c of crew) {
-    if (!game.actors.get(c.actor_id)) continue;
-    const entry = byActor.get(c.actor_id) ?? { id: c.actor_id, name: c.actor_name, roles: [] };
+  for (const c of actor.getFlag(SYS, "crew") ?? []) {
+    const a = game.actors.get(c.actor_id);
+    if (!a) continue;
+    const entry = byActor.get(c.actor_id) ?? { id: c.actor_id, name: a.name, roles: [], owned: a.isOwner, kinds: { pilot: false, gunner: false, engineer: false } };
     entry.roles.push(c.role);
+    const k = roleKinds(c.role);
+    for (const key of Object.keys(k)) entry.kinds[key] ||= k[key];
     byActor.set(c.actor_id, entry);
   }
-  const list = [...byActor.values()].map((e) => ({ ...e, group: "Équipage" }));
-  const others = game.actors.filter((a) => CREW_TYPES.includes(a.type) && !byActor.has(a.id) && (game.user.isGM || a.isOwner));
-  const mine = game.user.character;
-  for (const a of others.sort((x, y) => (x === mine ? -1 : y === mine ? 1 : x.name.localeCompare(y.name)))) {
-    list.push({ id: a.id, name: a.name, roles: [], group: "Autres personnages" });
-  }
+  return [...byActor.values()];
+}
 
-  const matches = (e) => e.roles.some((r) => {
-    const def = roles.find((x) => x.role_name === r);
-    if (preferRole === "gunner") return def?.use_weapons || /gunner|artill|canon/i.test(r);
-    if (preferRole === "pilot") return /pilot/i.test(r);
-    if (preferRole === "engineer") return def?.role_skill === "Mechanics" || /engineer|ing[ée]n|m[ée]can/i.test(r);
-    return false;
-  });
-  const preferred = list.find(matches) ?? list.find((e) => e.group === "Équipage") ?? (mine && list.find((e) => e.id === mine.id));
+/**
+ * Ce que l'utilisateur peut faire sur ce vaisseau. Le MJ peut tout faire ; un joueur seulement ce que
+ * permettent les postes de ses personnages dans l'équipage. Sans équipage enregistré, le propriétaire
+ * du vaisseau garde l'accès complet.
+ */
+function userAccess(actor) {
+  if (game.user.isGM) return { gm: true, pilot: true, gunner: true, crew: true };
+  const crew = shipCrew(actor);
+  if (!crew.length) {
+    const own = actor.isOwner;
+    return { gm: false, pilot: own, gunner: own, crew: own, noCrew: true };
+  }
+  const mine = crew.filter((e) => e.owned);
+  return { gm: false, pilot: mine.some((e) => e.kinds.pilot), gunner: mine.some((e) => e.kinds.gunner), crew: mine.length > 0 };
+}
+
+/**
+ * Personnages proposés pour un jet.
+ * @param {string} preferRole poste à présélectionner (pilot, gunner, engineer)
+ * @param {string} requireRole poste exigé pour un joueur (pilot, gunner) ; le MJ voit tout le monde
+ */
+function crewChoices(actor, preferRole, requireRole = null) {
+  const crew = shipCrew(actor);
+  const mine = game.user.character;
+  let list;
+  if (game.user.isGM) {
+    list = crew.map((e) => ({ ...e, group: "Équipage" }));
+    const others = game.actors.filter((a) => CREW_TYPES.includes(a.type) && !crew.some((e) => e.id === a.id));
+    for (const a of others.sort((x, y) => (x === mine ? -1 : y === mine ? 1 : x.name.localeCompare(y.name)))) {
+      list.push({ id: a.id, name: a.name, roles: [], kinds: {}, group: "Autres personnages" });
+    }
+  } else if (crew.length) {
+    // Un joueur ne lance que pour ses propres personnages, au poste qu'ils occupent.
+    list = crew.filter((e) => e.owned && (!requireRole || e.kinds[requireRole])).map((e) => ({ ...e, group: "Vos personnages" }));
+  } else {
+    list = game.actors.filter((a) => CREW_TYPES.includes(a.type) && a.isOwner)
+      .map((a) => ({ id: a.id, name: a.name, roles: [], kinds: {}, group: "Vos personnages" }));
+  }
+  const preferred = list.find((e) => e.kinds?.[preferRole]) ?? list.find((e) => e.group === "Équipage") ?? (mine && list.find((e) => e.id === mine.id)) ?? list[0];
   return { list, selected: preferred?.id ?? "" };
 }
 
-function crewSelectHTML(actor, preferRole) {
-  const { list, selected } = crewChoices(actor, preferRole);
+const ROLE_LABELS = { pilot: "pilote", gunner: "artilleur" };
+
+/** Vérifie qu'un joueur a bien un personnage pour ce poste, sinon le prévient. */
+function checkCrew(actor, requireRole) {
+  if (game.user.isGM) return true;
+  if (crewChoices(actor, requireRole, requireRole).list.length) return true;
+  ui.notifications.warn(requireRole
+    ? `Aucun de vos personnages n'est ${ROLE_LABELS[requireRole]} à bord de ${actor.name} (postes d'équipage sur la fiche du vaisseau).`
+    : `Aucun de vos personnages ne fait partie de l'équipage de ${actor.name}.`);
+  return false;
+}
+
+function crewSelectHTML(actor, preferRole, requireRole = null) {
+  const { list, selected } = crewChoices(actor, preferRole, requireRole);
   const groups = {};
   for (const e of list) (groups[e.group] ??= []).push(e);
-  let html = `<option value="">— Aucun (réserve à compléter à la main) —</option>`;
+  let html = game.user.isGM ? `<option value="">— Aucun (réserve à compléter à la main) —</option>` : "";
   for (const [g, entries] of Object.entries(groups)) {
     html += `<optgroup label="${esc(g)}">${entries.map((e) => `<option value="${e.id}" ${e.id === selected ? "selected" : ""}>${esc(e.name)}${e.roles.length ? ` (${esc(e.roles.join(", "))})` : ""}</option>`).join("")}</optgroup>`;
   }
@@ -673,6 +724,7 @@ async function form(title, content, label = "Lancer", renderCb) {
 
 async function attackDialog(state, key) {
   const { ship, actor } = findShip(state, key);
+  if (!checkCrew(actor, "gunner")) return;
   const weapons = actor.items.filter((i) => i.type === "shipweapon").map(weaponStats);
   if (!weapons.length) return ui.notifications.warn(`${actor.name} n'a aucune arme de vaisseau.`);
   const targets = state.ships.filter((s) => s.key !== key && shipActor(s));
@@ -681,7 +733,7 @@ async function attackDialog(state, key) {
   const unfired = weapons.find((w) => !ship.fired.includes(w.id)) ?? weapons[0];
 
   const content = `
-    <div class="form-group"><label>Tireur</label>${crewSelectHTML(actor, "gunner")}</div>
+    <div class="form-group"><label>Tireur</label>${crewSelectHTML(actor, "gunner", "gunner")}</div>
     <div class="form-group"><label>Arme</label><select name="weapon">${weapons.map((w) => `<option value="${w.id}" ${w.id === unfired.id ? "selected" : ""}>${esc(w.name)}${ship.fired.includes(w.id) ? " (a déjà tiré)" : ""}</option>`).join("")}</select></div>
     <div class="form-group"><label>Cible</label><select name="target">${targets.map((s) => `<option value="${s.key}" ${s.key === defaultTarget.key ? "selected" : ""}>${esc(shipActor(s).name)}</option>`).join("")}</select></div>
     <div class="form-group"><label>Zone visée</label><select name="zone"></select></div>
@@ -756,6 +808,7 @@ async function attackDialog(state, key) {
 
 async function advantageDialog(state, key) {
   const { ship, actor } = findShip(state, key);
+  if (!checkCrew(actor, "pilot")) return;
   const st = stats(actor);
   if (st.sil > 4) return ui.notifications.warn("Prendre l'avantage : gabarit 4 maximum.");
   if (st.speed < 4) return ui.notifications.warn("Prendre l'avantage : vitesse 4 minimum.");
@@ -769,7 +822,7 @@ async function advantageDialog(state, key) {
     return { base, prev, total: base + prev };
   };
   const content = `
-    <div class="form-group"><label>Pilote</label>${crewSelectHTML(actor, "pilot")}</div>
+    <div class="form-group"><label>Pilote</label>${crewSelectHTML(actor, "pilot", "pilot")}</div>
     <div class="form-group"><label>Adversaire</label><select name="target">${targets.map((s) => `<option value="${s.key}" ${s.key === def.key ? "selected" : ""}>${esc(shipActor(s).name)} (vitesse ${stats(shipActor(s)).speed})</option>`).join("")}</select></div>
     <div class="sc-summary"></div>`;
   const refresh = (dialog) => {
@@ -792,6 +845,7 @@ async function advantageDialog(state, key) {
 
 async function repairDialog(state, key) {
   const { ship, actor } = findShip(state, key);
+  if (!checkCrew(actor, null)) return;
   const st = stats(actor);
   const crits = actor.items.filter((i) => i.type === "criticaldamage");
   const options = [
@@ -825,10 +879,11 @@ async function repairDialog(state, key) {
 
 async function terrainDialog(state, key) {
   const { actor } = findShip(state, key);
+  if (!checkCrew(actor, "pilot")) return;
   const st = stats(actor);
   const t = R.terrainCheck(st.speed, st.sil);
   const content = `
-    <div class="form-group"><label>Pilote</label>${crewSelectHTML(actor, "pilot")}</div>
+    <div class="form-group"><label>Pilote</label>${crewSelectHTML(actor, "pilot", "pilot")}</div>
     <div class="form-group"><label>Danger (table 7-8)</label><select name="danger">
       <option value="0">Simple : terrain dégagé, champ d'astéroïdes peu dense</option>
       <option value="1">[SE] : terrain ardu, astéroïdes, survol de montagnes</option>
@@ -847,6 +902,7 @@ async function terrainDialog(state, key) {
 
 async function crewActionDialog(state, key, preset) {
   const { actor } = findShip(state, key);
+  if (!checkCrew(actor, null)) return;
   const content = `
     <div class="form-group"><label>Personnage</label>${crewSelectHTML(actor)}</div>
     <div class="form-group"><label>Action</label><select name="action">${R.CREW_ACTIONS.map((a) => {
@@ -878,6 +934,7 @@ async function crewActionDialog(state, key, preset) {
 }
 
 async function critDialog(state, key) {
+  if (!game.user.isGM) return ui.notifications.warn("Seul le MJ lance les dégâts critiques.");
   const { actor } = findShip(state, key);
   const existing = actor.items.filter((i) => i.type === "criticaldamage").length;
   const content = `
@@ -890,6 +947,7 @@ async function critDialog(state, key) {
 }
 
 async function collisionDialog(state, key) {
+  if (!game.user.isGM) return ui.notifications.warn("Seul le MJ gère les collisions.");
   const { actor } = findShip(state, key);
   const st = stats(actor);
   const zones = R.zonesFor(st.sil);
@@ -904,6 +962,7 @@ async function collisionDialog(state, key) {
 
 async function shiftDialog(state, key) {
   const { actor } = findShip(state, key);
+  if (!checkCrew(actor, null)) return;
   const st = stats(actor);
   const zones = R.zonesFor(st.sil);
   const opts = (sel) => zones.map((z) => `<option value="${z}" ${z === sel ? "selected" : ""}>${R.ZONES[z]} (${st.shields[z]})</option>`).join("");
@@ -919,6 +978,7 @@ async function shiftDialog(state, key) {
 
 async function maneuverClick(state, key, kind) {
   const { ship, actor } = findShip(state, key);
+  if (!checkCrew(actor, "pilot")) return;
   const m = R.MANEUVERS[kind];
   const st = stats(actor);
   const limit = pilotLimit(st.sil);
@@ -993,6 +1053,7 @@ export class SpaceCombatApp extends ApplicationV2 {
     const st = stats(actor);
     const canSee = game.user.isGM || actor.testUserPermission(game.user, "OBSERVER");
     const canAct = game.user.isGM || actor.isOwner;
+    const access = userAccess(actor);
     const effects = [];
     if (isActive(ship.effects.evasive, state.round)) effects.push({ key: "evasive", label: `Évasion (R${ship.effects.evasive})`, hint: R.MANEUVERS.evasive.hint });
     if (isActive(ship.effects.stick, state.round)) effects.push({ key: "stick", label: `Collé à la cible (R${ship.effects.stick})`, hint: R.MANEUVERS.stick.hint });
@@ -1003,7 +1064,7 @@ export class SpaceCombatApp extends ApplicationV2 {
     if (ship.boost) effects.push({ key: null, label: `Bouclier ${R.ZONES[ship.boost.zone]} intensifié`, hint: "+1 défense jusqu'au prochain round." });
     if (ship.repaired) effects.push({ key: null, label: "Coque déjà réparée", hint: "Le contrôle des dégâts sur la coque n'est possible qu'une fois par rencontre." });
     return {
-      ...ship, actor, st, canSee, canAct,
+      ...ship, actor, st, canSee, canAct, access,
       name: actor.name, img: actor.img,
       limit: pilotLimit(st.sil),
       pips: Array.from({ length: pilotLimit(st.sil) }, (_, i) => i < ship.pm),
@@ -1075,13 +1136,19 @@ export class SpaceCombatApp extends ApplicationV2 {
     const bar = (label, value, max, field) => {
       const pct = max ? Math.min(100, Math.round((value / max) * 100)) : 0;
       const over = value > max ? "over" : value * 2 >= max ? "half" : "";
-      const ctrl = s.canAct ? `<a data-action="ship" data-op="adjust" data-field="${field}" data-delta="-1" data-key="${s.key}"><i class="fa-solid fa-minus"></i></a><a data-action="ship" data-op="adjust" data-field="${field}" data-delta="1" data-key="${s.key}"><i class="fa-solid fa-plus"></i></a>` : "";
+      const ctrl = ctx.isGM ? `<a data-action="ship" data-op="adjust" data-field="${field}" data-delta="-1" data-key="${s.key}"><i class="fa-solid fa-minus"></i></a><a data-action="ship" data-op="adjust" data-field="${field}" data-delta="1" data-key="${s.key}"><i class="fa-solid fa-plus"></i></a>` : "";
       return `<div class="sc-bar ${over}"><span class="sc-bar-label">${label}</span><span class="sc-bar-track"><span style="width:${s.canSee ? pct : 0}%"></span></span><span class="sc-bar-value">${s.canSee ? `${value}/${max}` : "?"}</span>${ctrl}</div>`;
     };
     const maneuvers = Object.entries(R.MANEUVERS).map(([k, m]) => {
       const blocked = st.sil > m.maxSil || st.speed < m.minSpeed || (m.pilot && s.pm >= s.limit);
       return btn(`man-${k}`, m.label, m.icon, blocked ? "disabled" : "", dice(m.hint));
     }).join("");
+    const actions = [];
+    if (s.access.gunner) actions.push(btn("attack", "Attaquer", "fa-solid fa-crosshairs"));
+    if (s.access.pilot) actions.push(btn("advantage", "Prendre l'avantage", "fa-solid fa-arrows-turn-to-dots", st.sil > 4 || st.speed < 4 ? "disabled" : "", "Gabarit 1-4, vitesse 4+ : test de Pilotage selon l'écart de vitesse"));
+    if (s.access.crew) actions.push(btn("repair", "Contrôle des dégâts", "fa-solid fa-screwdriver-wrench"), btn("crew", "Action d'équipage", "fa-solid fa-users"));
+    if (s.access.pilot) actions.push(btn("terrain", "Terrain", "fa-solid fa-meteor"));
+    if (ctx.isGM) actions.push(btn("crit", "Critique", "fa-solid fa-explosion"), btn("collision", "Collision", "fa-solid fa-car-burst"));
     return `<article class="sc-ship ${s.side}">
       <header>
         <img src="${esc(s.img)}" alt="">
@@ -1097,9 +1164,9 @@ export class SpaceCombatApp extends ApplicationV2 {
       <div class="sc-stats">
         <div class="sc-speed">
           <span class="sc-bar-label">Vitesse</span>
-          ${s.canAct ? `<a data-action="ship" data-op="adjust" data-field="speed" data-delta="-1" data-key="${s.key}"><i class="fa-solid fa-minus"></i></a>` : ""}
+          ${ctx.isGM ? `<a data-action="ship" data-op="adjust" data-field="speed" data-delta="-1" data-key="${s.key}"><i class="fa-solid fa-minus"></i></a>` : ""}
           <strong>${st.speed}</strong>/${st.maxSpeed}
-          ${s.canAct ? `<a data-action="ship" data-op="adjust" data-field="speed" data-delta="1" data-key="${s.key}"><i class="fa-solid fa-plus"></i></a>` : ""}
+          ${ctx.isGM ? `<a data-action="ship" data-op="adjust" data-field="speed" data-delta="1" data-key="${s.key}"><i class="fa-solid fa-plus"></i></a>` : ""}
           <span class="sc-pips" data-tooltip="Manœuvres de pilote ce round (${s.limit} max${s.limit === 2 ? ", la 2ᵉ coûte 2 stress" : ""})">${s.pips.map((p) => `<i class="fa-${p ? "solid" : "regular"} fa-circle"></i>`).join("")}</span>
         </div>
         ${bar("Coque", st.hull, st.hullMax, "hull")}
@@ -1107,23 +1174,15 @@ export class SpaceCombatApp extends ApplicationV2 {
         <div class="sc-zones">
           <span class="sc-bar-label">Défense</span>
           ${s.zones.map((z) => `<span class="sc-zone" data-tooltip="${z.label}"><small>${z.label}</small><strong>${z.value}</strong></span>`).join("")}
-          ${s.canAct ? btn("shift", "Réorienter", "fa-solid fa-shield-halved", "", "Transférer 1 point de défense d'une zone à une autre") : ""}
+          ${s.access.crew ? btn("shift", "Réorienter", "fa-solid fa-shield-halved", "", "Transférer 1 point de défense d'une zone à une autre") : ""}
         </div>
       </div>
-      ${s.effects.length ? `<div class="sc-effects">${s.effects.map((e) => `<span class="sc-chip" data-tooltip-html="${esc(dice(e.hint))}">${esc(e.label)}${e.key && s.canAct ? ` <a data-action="ship" data-op="clear" data-effect="${e.key}" data-key="${s.key}"><i class="fa-solid fa-xmark"></i></a>` : ""}</span>`).join("")}</div>` : ""}
-      ${s.canAct ? `
-      <div class="sc-group"><span class="sc-group-label">Manœuvres de pilote</span><div class="sc-btns">${maneuvers}</div></div>
-      <div class="sc-group"><span class="sc-group-label">Actions</span><div class="sc-btns">
-        ${btn("attack", "Attaquer", "fa-solid fa-crosshairs")}
-        ${btn("advantage", "Prendre l'avantage", "fa-solid fa-arrows-turn-to-dots", st.sil > 4 || st.speed < 4 ? "disabled" : "", "Gabarit 1-4, vitesse 4+ : test de Pilotage selon l'écart de vitesse")}
-        ${btn("repair", "Contrôle des dégâts", "fa-solid fa-screwdriver-wrench")}
-        ${btn("crew", "Action d'équipage", "fa-solid fa-users")}
-        ${btn("terrain", "Terrain", "fa-solid fa-meteor")}
-        ${btn("crit", "Critique", "fa-solid fa-explosion")}
-        ${btn("collision", "Collision", "fa-solid fa-car-burst")}
-      </div></div>` : ""}
+      ${s.effects.length ? `<div class="sc-effects">${s.effects.map((e) => `<span class="sc-chip" data-tooltip-html="${esc(dice(e.hint))}">${esc(e.label)}${e.key && ctx.isGM ? ` <a data-action="ship" data-op="clear" data-effect="${e.key}" data-key="${s.key}"><i class="fa-solid fa-xmark"></i></a>` : ""}</span>`).join("")}</div>` : ""}
+      ${s.access.pilot ? `<div class="sc-group"><span class="sc-group-label">Manœuvres de pilote</span><div class="sc-btns">${maneuvers}</div></div>` : ""}
+      ${actions.length ? `<div class="sc-group"><span class="sc-group-label">Actions</span><div class="sc-btns">${actions.join("")}</div></div>` : ""}
+      ${!ctx.isGM && !s.access.pilot && !actions.length && s.canAct ? `<p class="sc-hint">Aucun de vos personnages n'occupe de poste à bord (postes d'équipage sur la fiche du vaisseau).</p>` : ""}
       ${s.canSee && s.weapons.length ? `<ul class="sc-weapons">${s.weapons.map((w) => `<li class="${w.fired ? "fired" : ""}"><strong>${esc(w.name)}</strong> <span>Dég ${w.damage} · Crit ${w.crit} · ${esc(w.range)} · ${esc(w.arcs.join("/"))}</span>${w.special ? `<small>${esc(w.special)}</small>` : ""}${w.fired ? `<em>a tiré</em>` : ""}</li>`).join("")}</ul>` : ""}
-      ${s.canSee && s.crits.length ? `<ul class="sc-crits">${s.crits.map((c) => `<li><i class="fa-solid fa-triangle-exclamation"></i> ${esc(c.name)} <small>${c.sev >= 5 ? "irréparable" : dice(diffDice(c.sev))}</small>${s.canAct ? ` <a data-action="ship" data-op="repairCrit" data-item="${c.id}" data-key="${s.key}" data-tooltip="Marquer comme réparé"><i class="fa-solid fa-check"></i></a>` : ""}</li>`).join("")}</ul>` : ""}
+      ${s.canSee && s.crits.length ? `<ul class="sc-crits">${s.crits.map((c) => `<li><i class="fa-solid fa-triangle-exclamation"></i> ${esc(c.name)} <small>${c.sev >= 5 ? "irréparable" : dice(diffDice(c.sev))}</small>${ctx.isGM ? ` <a data-action="ship" data-op="repairCrit" data-item="${c.id}" data-key="${s.key}" data-tooltip="Marquer comme réparé"><i class="fa-solid fa-check"></i></a>` : ""}</li>`).join("")}</ul>` : ""}
     </article>`;
   }
 
@@ -1276,6 +1335,10 @@ document.addEventListener("click", async (ev) => {
   if (!b || b.disabled) return;
   ev.preventDefault();
   ev.stopPropagation();
+  if (!game.user.isGM) {
+    ui.notifications.info("C'est le MJ qui applique les résultats du combat spatial.");
+    return;
+  }
   try {
     if (b.classList.contains("sc-crit")) {
       await critDialog(getState(), b.dataset.key);
@@ -1287,3 +1350,9 @@ document.addEventListener("click", async (ev) => {
     ui.notifications.warn(err.message);
   }
 }, true);
+
+/** Les boutons des cartes de chat (appliquer, critique…) ne s'affichent que pour le MJ. */
+Hooks.on("renderChatMessageHTML", (message, html) => {
+  if (game.user.isGM) return;
+  for (const el of html.querySelectorAll(".sc-card .sc-buttons")) el.remove();
+});
